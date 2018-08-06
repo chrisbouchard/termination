@@ -5,13 +5,13 @@ with open('README.md', 'r') as fh:
 
 setuptools.setup(
     name='termination',
-    version='0.0.1',
+    version='0.0.2',
     author='Chris Bouchard',
     author_email='chris@upliftinglemma.net',
     description='A library for first-order term-rewriting',
     long_description=long_description,
     long_description_content_type='text/markdown',
-    url='https://github.com/cbouchard/termination',
+    url='https://github.com/chrisbouchard/termination',
     packages=setuptools.find_packages(),
     classifiers=(
         'Programming Language :: Python :: 3',
