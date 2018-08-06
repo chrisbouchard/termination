@@ -7,8 +7,8 @@ name = "pypi"
 
 [dev-packages]
 setuptools = "*"
-wheel = "*"
 twine = "*"
+wheel = "*"
 
 [requires]
 python_version = "3.7"
