@@ -6,9 +6,12 @@ name = "pypi"
 [packages]
 
 [dev-packages]
+flake8 = "*"
+python-semantic-release = "*"
 setuptools = "*"
 twine = "*"
 wheel = "*"
 
 [requires]
 python_version = "3.7"
+
