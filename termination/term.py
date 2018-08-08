@@ -24,7 +24,17 @@ class Term:
                 f'Expected {root_arity}, found {length}'
             )
 
-    def __getitem(self, path: PathIterable) -> 'Term':
+    def __str__(self) -> str:
+        # TODO: Make name available in the typings
+        root_name = self.root.name
+
+        if arity(self.root) == 0:
+            return str(self.root.name)
+
+        subterms_str = ', '.join(str(subterm) for subterm in self.subterms)
+        return f'{root_name}({subterms_str})'
+
+    def __getitem__(self, path: PathIterable) -> 'Term':
         original_path = tuple(path)
         term = self
 
