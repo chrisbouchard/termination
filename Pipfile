@@ -4,6 +4,7 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
+"e1839a8" = {path = ".", editable = true}
 
 [dev-packages]
 flake8 = "*"
@@ -11,7 +12,9 @@ python-semantic-release = "*"
 setuptools = "*"
 twine = "*"
 wheel = "*"
+"flake8-bugbear" = "*"
+"flake8-quotes" = "*"
+"flake8-import-order" = "*"
 
 [requires]
 python_version = "3.7"
-

@@ -1,6 +1,7 @@
 import re
-import setuptools
 import sys
+
+import setuptools
 
 with open('termination/__init__.py', 'r') as fh:
     version = re.search(
@@ -28,7 +29,9 @@ setuptools.setup(
     long_description_content_type='text/markdown',
     license='MIT',
     packages=setuptools.find_packages(exclude='tests'),
-    install_requires=[],
+    install_requires=[
+        'anytree>=2.4,<2.5'
+    ],
     classifiers=[
         'License :: OSI Approved :: MIT License',
         'Operating System :: OS Independent',
@@ -37,4 +40,3 @@ setuptools.setup(
         'Programming Language :: Python',
     ],
 )
-
