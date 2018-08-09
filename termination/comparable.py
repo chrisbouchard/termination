@@ -1,129 +1,56 @@
-from abc import ABCMeta, abstractmethod
-from enum import Enum, auto
-import operator
-from types import NotImplementedType
-from typing import Generic, TypeVar, Union
+# TODO: Rename comparable to orderings and use all plurals for modules
+from dataclasses import dataclass
+from functools import wraps
+from typing import Any, Callable, Generic, TypeVar
 
-__all__ = ['Comparable', 'Expression', 'Operation']
-
-
-T = TypeVar('T', bound='Comparable')
+__all__ = ['ordering']
 
 
-class Expression(Generic[T], metaclass=ABCMeta):
-    @abstractmethod
-    def _evaluate(self, measure: Callable[[T], Any]) -> Any:
-        pass
-
-    def __bool__(self) -> Any:
-        return self._evaluate(lambda value: value._default_measure())
-
-    def __and__(self, other: 'Expression[T]') -> 'Expression[T]':
-        return ConnectiveExpression(
-            connect=operator.and_,
-            left=self,
-            right=other
-        )
-
-    def __or__(self, other: 'Expression[T]') -> 'Expression[T]':
-        return ConnectiveExpression(
-            connect=operator.or_,
-            left=self,
-            right=other
-        )
-
-    def __not__(self) -> 'Expression[T]':
-        return NotExpression(value=self)
+T = TypeVar('T')
 
 
 @dataclass
-class ComparisonExpression(Expression[T]):
-    compare: Callable[[Any, Any], Any]
-    left: T
-    right: T
+class OrderedValue(Generic[T]):
+    value: Any
+    constructor: Callable[[Any], T]
 
-    def _evaluate(self, measure: Callable[[T], Any]) -> Any:
-        left_measure = measure(self.left)
-        right_measure = measure(self.right)
-        return self.compare(left_measure, right_measure)
+    def _evaluate_left(self) -> T:
+        return self.constructor(self.value)
 
+    def _evaluate_right(self, right: Any) -> T:
+        if instanceof(right, OrderedValue):
+            return self.constructor(right.value)
 
-@dataclass
-class ConnectiveExpression(Expression[T]):
-    connect: Callable[[Any, Any], Any]
-    left: Expression[T]
-    right: Expression[T]
+        return self.constructor(right)
 
-    def _visit(self, visitor: Callable[[T], Any]) -> Any:
-        evaluated_left = self.left._evaluate(visitor)
-        evaluated_right = self.right._evaluate(visitor)
-        return self.connect(evaluated_left, evaluated_right)
+    def __lt__(self, right: Any) -> Any:
+        return self._evaluate_left() < self._evaluate_right(right)
 
+    def __le__(self, right: Any) -> Any:
+        return self._evaluate_left() <= self._evaluate_right(right)
 
-@dataclass
-class NotExpression(Expression[T]):
-    value: T
+    def __gt__(self, right: Any) -> Any:
+        return self._evaluate_left() > self._evaluate_right(right)
 
-    def _visit(self, visitor: Callable[[T], Any]) -> Any:
-        visited_value = visitor(self.value)
-        return not visited_value
+    def __ge__(self, right: Any) -> Any:
+        return self._evaluate_left() >= self._evaluate_right(right)
 
+    def __eq__(self, right: Any) -> Any:
+        return self._evaluate_left() == self._evaluate_right(right)
 
-def ordering(measure: Callable[[T], Any]) -> Callable[[Expression[T]], Any]:
-    def evaluate_ordering(expression: Expression[T], **kwargs: Any) -> Any:
-        def _measure(value: T) -> Any:
-            return measure(value, **kwargs)
-        return expression._evaluate(_measure)
-
-    return evaluate_ordering
+    def __ne__(self, right: Any) -> Any:
+        return self._evaluate_left() != self._evaluate_right(right)
 
 
-TSelf = TypeVar('TSelf')
+def ordering(constructor: Callable[..., T]) -> Callable[..., OrderedValue[T]]:
+    @wraps(constructor)
+    def wrapped_constructor(value: Any, **kwargs: Any) -> OrderedValue[T]:
+        def apply_constructor(value: Any) -> T:
+            return constructor(value, **kwargs)
 
-
-class Comparable(metaclass=ABCMeta):
-    @abstractmethod
-    def _default_measure(self) -> Any:
-        pass
-
-    def __lt__(self: TSelf, other: TSelf) -> Expression[TSelf]
-        return ComparisonExpression(
-            compare=operator.lt,
-            left=self,
-            right=other
+        return OrderedValue(
+            value=value,
+            constructor=apply_constructor
         )
 
-    def __le__(self: TSelf, other: TSelf) -> Expression[TSelf]
-        return ComparisonExpression(
-            compare=operator.le,
-            left=self,
-            right=other
-        )
-
-    def __gt__(self: TSelf, other: TSelf) -> Expression[TSelf]
-        return ComparisonExpression(
-            compare=operator.gt,
-            left=self,
-            right=other
-        )
-
-    def __ge__(self: TSelf, other: TSelf) -> Expression[TSelf]
-        return ComparisonExpression(
-            compare=operator.ge,
-            left=self,
-            right=other
-        )
-
-    def __eq__(self: TSelf, other: TSelf) -> Expression[TSelf]
-        return ComparisonExpression(
-            compare=operator.eq,
-            left=self,
-            right=other
-        )
-
-    def __ne__(self: TSelf, other: TSelf) -> Expression[TSelf]
-        return ComparisonExpression(
-            compare=operator.ne,
-            left=self,
-            right=other
-        )
+    return wrapped_constructor
