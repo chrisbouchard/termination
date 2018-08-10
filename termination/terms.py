@@ -64,7 +64,7 @@ class Term(TermLike):
         length = len(self.subterms)
         if root_arity != length:
             raise ValueError(
-                'Incorrect number of subterms: ' +
+                'Incorrect number of subterms: '
                 f'Expected {arity}, found {length}'
             )
 
