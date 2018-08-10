@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 
-from .arity import HasArity
-from .term import Term
+from .arities import HasArity
+from .terms import Term
 
 __all__ = ['Symbol']
 

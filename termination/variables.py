@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from .arity import HasArity
+from .arities import HasArity
 
 __all__ = ['Variable']
 

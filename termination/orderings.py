@@ -1,4 +1,3 @@
-# TODO: Rename comparable to orderings and use all plurals for modules
 from dataclasses import dataclass
 from functools import wraps
 from typing import Any, Callable, Generic, TypeVar
@@ -18,7 +17,7 @@ class OrderedValue(Generic[T]):
         return self.constructor(self.value)
 
     def _evaluate_right(self, right: Any) -> T:
-        if instanceof(right, OrderedValue):
+        if isinstance(right, OrderedValue):
             return self.constructor(right.value)
 
         return self.constructor(right)

@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from typing import Iterable, Tuple
 
-from .arity import HasArity, arity
+from .arities import HasArity, arity
 
 __all__ = ['Path', 'PathIterable', 'Term']
 
