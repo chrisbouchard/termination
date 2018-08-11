@@ -1,26 +1,29 @@
 from abc import ABCMeta, abstractmethod
 from dataclasses import dataclass, field
 from functools import singledispatch
-from typing import Iterable, Tuple
+from inspect import iscallable
+from typing import Any, Iterable, Tuple
 
-__all__ = ['Path', 'PathIterable', 'Symbol', 'Term', 'Variable', 'variables']
+__all__ = [
+    'Position', 'PositionIterable', 'Symbol', 'Term', 'Variable', 'variables'
+]
 
 
-Path = Tuple[int]
-PathIterable = Iterable[int]
+Position = Tuple[int]
+PositionIterable = Iterable[int]
 
 
 class TermLike(metaclass=ABCMeta):
     @abstractmethod
-    def __getitem__(self, path: PathIterable) -> 'Term':
+    def __getitem__(self, position: PositionIterable) -> 'Term':
         pass
 
     @abstractmethod
-    def subterms(self) -> Iterable[Tuple[Path, TermLike]]:
+    def subterms(self) -> Iterable[Tuple[Position, 'TermLike']]:
         pass
 
-    def positions(self) -> Iterable[Path]:
-        yield from (term for (pos, term) in self.subterms())
+    def positions(self) -> Iterable[Position]:
+        yield from (term for (position, term) in self.subterms())
 
 
 @dataclass(frozen=True)
@@ -42,19 +45,20 @@ class Variable(TermLike):
     def __str__(self) -> str:
         return f'?{self.name}'
 
-    def __getitem__(self, path: PathIterable) -> TermLike:
+    def __getitem__(self, position: PositionIterable) -> TermLike:
+        position_copy = tuple(position)
         # TODO: This syntax is ugly
-        for position in path:
-            raise IndexError(f'Invalid path: {original_path}')
+        for _ in position_copy:
+            raise IndexError(f'Invalid position: {position_copy}')
         return self
 
-    def subterms(self) -> Iterable[Tuple[Path, TermLike]]:
+    def subterms(self) -> Iterable[Tuple[Position, TermLike]]:
         yield ((), self)
 
 
 @singledispatch
 def variables(value: Any) -> Iterable[Variable]:
-    if hasattr(value, _variables) and iscallable(value._variables):
+    if hasattr(value, '_variables') and iscallable(value._variables):
         return value._variables()
     raise ValueError('Value does not have variables')
 
@@ -72,39 +76,39 @@ class Term(TermLike):
     def __post_init__(self) -> None:
         arity = self.root.arity
         length = len(self.subterms)
-        if root_arity != length:
+        if arity != length:
             raise ValueError(
                 'Incorrect number of subterms: '
                 f'Expected {arity}, found {length}'
             )
 
     def __str__(self) -> str:
-        root_name = self.root.name
+        root_str = str(self.root)
 
         if self.root.arity == 0:
-            return str(root.name)
+            return root_str
 
         subterms_str = ', '.join(str(subterm) for subterm in self.subterms)
-        return f'{root_name}({subterms_str})'
+        return f'{root_str}({subterms_str})'
 
-    def __getitem__(self, path: PathIterable) -> TermLike:
-        path_copy = tuple(path)
+    def __getitem__(self, position: PositionIterable) -> TermLike:
+        position_copy = tuple(position)
         term = self
 
-        for position in path_copy:
+        for index in position_copy:
             try:
-                term = term.subterms[position]
+                term = term.subterms[index]
             except IndexError as ex:
-                raise IndexError(f'Invalid path: {path_copy}')
+                raise IndexError(f'Invalid position: {position_copy}')
 
         return term
 
-    def subterms(self) -> Iterable[Tuple[Path, TermLike]]:
+    def subterms(self) -> Iterable[Tuple[Position, TermLike]]:
         yield ((), self)
-        for i, subterm of enumerate(self.subterms):
+        for index, subterm in enumerate(self.subterms):
             yield from (
-                ((i, ...pos), t)
-                for (pos, t) in subterm.subterms()
+                ((index, *position), term)
+                for (position, term) in subterm.subterms()
             )
 
     def _variables(self) -> Iterable[Variable]:
