@@ -5,7 +5,12 @@ from inspect import iscallable
 from typing import Any, Iterable, Tuple
 
 __all__ = [
-    'Position', 'PositionIterable', 'Symbol', 'Term', 'Variable', 'variables'
+    'Position',
+    'PositionIterable',
+    'Symbol',
+    'Term',
+    'Variable',
+    'variables'
 ]
 
 
