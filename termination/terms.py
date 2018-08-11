@@ -15,6 +15,13 @@ class TermLike(metaclass=ABCMeta):
     def __getitem__(self, path: PathIterable) -> 'Term':
         pass
 
+    @abstractmethod
+    def subterms(self) -> Iterable[Tuple[Path, TermLike]]:
+        pass
+
+    def positions(self) -> Iterable[Path]:
+        yield from (term for (pos, term) in self.subterms())
+
 
 @dataclass(frozen=True)
 class Symbol:
@@ -40,6 +47,9 @@ class Variable(TermLike):
         for position in path:
             raise IndexError(f'Invalid path: {original_path}')
         return self
+
+    def subterms(self) -> Iterable[Tuple[Path, TermLike]]:
+        yield ((), self)
 
 
 @singledispatch
@@ -88,6 +98,14 @@ class Term(TermLike):
                 raise IndexError(f'Invalid path: {path_copy}')
 
         return term
+
+    def subterms(self) -> Iterable[Tuple[Path, TermLike]]:
+        yield ((), self)
+        for i, subterm of enumerate(self.subterms):
+            yield from (
+                ((i, ...pos), t)
+                for (pos, t) in subterm.subterms()
+            )
 
     def _variables(self) -> Iterable[Variable]:
         for subterm in self.subterms:
