@@ -1,7 +1,6 @@
 from abc import ABCMeta, abstractmethod
 from dataclasses import dataclass, field
 from functools import singledispatch
-from inspect import iscallable
 from typing import Any, Iterable, Tuple
 
 __all__ = [
@@ -20,7 +19,7 @@ PositionIterable = Iterable[int]
 
 class TermLike(metaclass=ABCMeta):
     @abstractmethod
-    def __getitem__(self, position: PositionIterable) -> 'Term':
+    def __getitem__(self, position: PositionIterable) -> 'TermLike':
         pass
 
     @abstractmethod
@@ -39,7 +38,7 @@ class Symbol:
     def __str__(self) -> str:
         return self.name
 
-    def __call__(self, *args: 'Term') -> 'Term':
+    def __call__(self, *args: TermLike) -> 'Term':
         return Term(self, args)
 
 
@@ -63,7 +62,7 @@ class Variable(TermLike):
 
 @singledispatch
 def variables(value: Any) -> Iterable[Variable]:
-    if hasattr(value, '_variables') and iscallable(value._variables):
+    if hasattr(value, '_variables') and callable(value._variables):
         return value._variables()
     raise ValueError('Value does not have variables')
 
@@ -76,14 +75,14 @@ def _(variable: Variable) -> Iterable[Variable]:
 @dataclass(frozen=True)
 class Term(TermLike):
     root: Symbol
-    subterms: Tuple[TermLike] = field(default_factory=tuple)
+    children: Tuple[TermLike] = field(default_factory=tuple)
 
     def __post_init__(self) -> None:
         arity = self.root.arity
-        length = len(self.subterms)
+        length = len(self.children)
         if arity != length:
             raise ValueError(
-                'Incorrect number of subterms: '
+                'Incorrect number of child terms: '
                 f'Expected {arity}, found {length}'
             )
 
@@ -93,8 +92,8 @@ class Term(TermLike):
         if self.root.arity == 0:
             return root_str
 
-        subterms_str = ', '.join(str(subterm) for subterm in self.subterms)
-        return f'{root_str}({subterms_str})'
+        children_str = ', '.join(str(child) for child in self.children)
+        return f'{root_str}({children_str})'
 
     def __getitem__(self, position: PositionIterable) -> TermLike:
         position_copy = tuple(position)
@@ -102,7 +101,7 @@ class Term(TermLike):
 
         for index in position_copy:
             try:
-                term = term.subterms[index]
+                term = term.children[index]
             except IndexError as ex:
                 raise IndexError(f'Invalid position: {position_copy}')
 
@@ -110,12 +109,12 @@ class Term(TermLike):
 
     def subterms(self) -> Iterable[Tuple[Position, TermLike]]:
         yield ((), self)
-        for index, subterm in enumerate(self.subterms):
+        for index, child in enumerate(self.children):
             yield from (
                 ((index, *position), term)
-                for (position, term) in subterm.subterms()
+                for (position, term) in child.subterms()
             )
 
     def _variables(self) -> Iterable[Variable]:
-        for subterm in self.subterms:
-            yield from variables(subterm)
+        for child in self.children:
+            yield from variables(child)

@@ -1,9 +1,9 @@
 import re
 import sys
 
-import setuptools
+from setuptools import find_packages, setup
 
-with open('termination/__init__.py', 'r') as fh:
+with open('src/termination/__init__.py', 'r') as fh:
     version = re.search(
         r'^__version__\s*=\s*[\'"]([^\'"]*)[\'"]',
         fh.read(),
@@ -19,7 +19,7 @@ try:
 except ImportError:
     pass
 
-setuptools.setup(
+setup(
     name='termination',
     url='https://github.com/chrisbouchard/termination',
     author='Chris Bouchard',
@@ -28,9 +28,19 @@ setuptools.setup(
     long_description=long_description,
     long_description_content_type='text/markdown',
     license='MIT',
-    packages=setuptools.find_packages(exclude='tests'),
+    packages=find_packages('src'),
+    package_dir={
+        '': 'src'
+    },
+    test_suite='nose.collector',
     install_requires=[
         'anytree>=2.4,<2.5'
+    ],
+    setup_requires=[
+        "flake8"
+    ],
+    tests_require=[
+        'nose'
     ],
     classifiers=[
         'License :: OSI Approved :: MIT License',
