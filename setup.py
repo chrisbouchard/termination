@@ -37,7 +37,7 @@ setup(
         'anytree>=2.4,<2.5'
     ],
     setup_requires=[
-        "flake8"
+        'flake8'
     ],
     tests_require=[
         'nose'

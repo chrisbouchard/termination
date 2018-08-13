@@ -1,20 +1,7 @@
-'''
-termination: A library for first-order term-rewriting
-'''
+"""termination: A library for first-order term-rewriting"""
 
 __version__ = '0.0.2'
-
-from .orderings import (
-    ordering
-)
-from .terms import (
-    Position,
-    PositionIterable,
-    Symbol,
-    Term,
-    Variable,
-    variables
-)
+__author__ = 'Chris Bouchard <chris@upliftinglemma.net>'
 
 __all__ = [
     # orderings
@@ -28,3 +15,16 @@ __all__ = [
     'Variable',
     'variables'
 ]
+
+
+from .orderings import (
+    ordering
+)
+from .terms import (
+    Position,
+    PositionIterable,
+    Symbol,
+    Term,
+    Variable,
+    variables
+)

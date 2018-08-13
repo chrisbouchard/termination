@@ -1,7 +1,9 @@
-from abc import ABCMeta, abstractmethod
-from dataclasses import dataclass, field
-from functools import singledispatch
-from typing import Any, Iterable, Tuple
+"""Module for syntactic terms and their support.
+
+Symbol: A syntactic function symbol, with a name and arity.
+Variable: A "slot" in a term that can be assinged with a substitution.
+Term: Application of a function symbol to one or more child terms.
+"""
 
 __all__ = [
     'Position',
@@ -13,11 +15,22 @@ __all__ = [
 ]
 
 
+from abc import ABCMeta, abstractmethod
+from dataclasses import dataclass, field
+from functools import singledispatch
+from typing import Any, Iterable, Tuple
+
+
 Position = Tuple[int]
 PositionIterable = Iterable[int]
 
 
 class TermLike(metaclass=ABCMeta):
+    """Abtract base class for things that can act as subterms.
+
+    Implementations include Term and Variable.
+    """
+
     @abstractmethod
     def __getitem__(self, position: PositionIterable) -> 'TermLike':
         pass
