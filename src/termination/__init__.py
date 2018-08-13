@@ -8,9 +8,10 @@ __all__ = [
     'ordering',
 
     # terms
+    'Constant',
+    'Function',
     'Position',
     'PositionIterable',
-    'Symbol',
     'Term',
     'Variable',
     'variables'
@@ -21,9 +22,10 @@ from .orderings import (
     ordering
 )
 from .terms import (
+    Constant,
+    Function,
     Position,
     PositionIterable,
-    Symbol,
     Term,
     Variable,
     variables

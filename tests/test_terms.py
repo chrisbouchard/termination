@@ -1,11 +1,11 @@
 from unittest import TestCase
 
-from termination.terms import Symbol, Term, Variable, variables
+from termination.terms import Function, Term, Variable, variables
 
 
-class TestSymbol(TestCase):
+class TestFunction(TestCase):
     def test_call(self):
-        f = Symbol('f', 2)
+        f = Function('f', 2)
         x = Variable('x')
         y = Variable('y')
         term = f(x, y)
@@ -31,10 +31,8 @@ class TestVariable(TestCase):
 class TestTerm(TestCase):
     def setUp(self):
         self.symbols = {
-            'f': Symbol('f', 2),
-            'g': Symbol('g', 1),
-            'a': Symbol('a'),
-            'b': Symbol('b')
+            'f': Function('f', 2),
+            'g': Function('g', 1)
         }
         self.vars = {
             'x': Variable('x'),

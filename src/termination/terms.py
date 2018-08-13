@@ -1,14 +1,16 @@
 """Module for syntactic terms and their support.
 
-Symbol: A syntactic function symbol, with a name and arity.
+Constant: A syntactic symbol with a name and zero arity.
+Function: A syntactic function symbol, with a name and nonzero arity.
 Variable: A "slot" in a term that can be assinged with a substitution.
 Term: Application of a function symbol to one or more child terms.
 """
 
 __all__ = [
+    'Constant',
     'Position',
     'PositionIterable',
-    'Symbol',
+    'Function',
     'Term',
     'Variable',
     'variables'
@@ -18,17 +20,20 @@ __all__ = [
 from abc import ABCMeta, abstractmethod
 from dataclasses import dataclass, field
 from functools import singledispatch
-from typing import Any, Iterable, Tuple
+from typing import Any, Iterable, Tuple, TypeVar
 
 
 Position = Tuple[int]
 PositionIterable = Iterable[int]
 
+T = TypeVar('T')
+
 
 class TermLike(metaclass=ABCMeta):
     """Abtract base class for things that can act as subterms.
 
-    Implementations include Term and Variable.
+    In addition to the listed abstract methods, implementations should respond
+    to the free variables() function.
     """
 
     @abstractmethod
@@ -44,33 +49,54 @@ class TermLike(metaclass=ABCMeta):
 
 
 @dataclass(frozen=True)
-class Symbol:
+class Symbol(metaclass=ABCMeta):
+    """Base class for symbols, which have names."""
     name: str
-    arity: int = field(default=0)
+
+
+class TerminalSymbol(Symbol, TermLike):
+    """Base class for symbols that occur as terms."""
+    def __getitem__(self: T, position: PositionIterable) -> T:
+        position_copy = tuple(position)
+        position_iter = iter(position_copy)
+
+        try:
+            next(position_iter)
+        except StopIteration:
+            return self
+
+        raise IndexError(f'Invalid position: {position_copy}')
+
+    def subterms(self: T) -> Iterable[Tuple[Position, T]]:
+        yield ((), self)
+
+
+@dataclass(frozen=True)
+class Function(Symbol):
+    arity: int
+
+    def __post_init__(self) -> None:
+        if self.arity <= 0:
+            raise ValueError('Arity must be 1 or greater. For arity 0, use Constant.')
 
     def __str__(self) -> str:
-        return self.name
+        return f'{self.name}.{self.arity}'
 
     def __call__(self, *args: TermLike) -> 'Term':
         return Term(self, args)
 
 
-@dataclass(frozen=True)
-class Variable(TermLike):
-    name: str
-
+class Constant(TerminalSymbol):
     def __str__(self) -> str:
-        return f'?{self.name}'
+        return self.name
 
-    def __getitem__(self, position: PositionIterable) -> TermLike:
-        position_copy = tuple(position)
-        # TODO: This syntax is ugly
-        for _ in position_copy:
-            raise IndexError(f'Invalid position: {position_copy}')
+    def __call__(self) -> 'Constant':
         return self
 
-    def subterms(self) -> Iterable[Tuple[Position, TermLike]]:
-        yield ((), self)
+
+class Variable(TerminalSymbol):
+    def __str__(self) -> str:
+        return f'?{self.name}'
 
 
 @singledispatch
@@ -87,7 +113,7 @@ def _(variable: Variable) -> Iterable[Variable]:
 
 @dataclass(frozen=True)
 class Term(TermLike):
-    root: Symbol
+    root: Function
     children: Tuple[TermLike] = field(default_factory=tuple)
 
     def __post_init__(self) -> None:
@@ -100,11 +126,9 @@ class Term(TermLike):
             )
 
     def __str__(self) -> str:
-        root_str = str(self.root)
-
-        if self.root.arity == 0:
-            return root_str
-
+        # The default str() for Function includes the arity, which is redundant
+        # here. Just use the symbol's name.
+        root_str = self.root.name
         children_str = ', '.join(str(child) for child in self.children)
         return f'{root_str}({children_str})'
 
@@ -144,10 +168,8 @@ class Term(TermLike):
     def subterms(self) -> Iterable[Tuple[Position, TermLike]]:
         yield ((), self)
         for index, child in enumerate(self.children):
-            yield from (
-                ((index, *position), term)
-                for (position, term) in child.subterms()
-            )
+            for (position, term) in child.subterms():
+                yield ((index, *position), term)
 
     def _variables(self) -> Iterable[Variable]:
         for child in self.children:
