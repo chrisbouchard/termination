@@ -96,16 +96,37 @@ class Term(TermLike):
         return f'{root_str}({children_str})'
 
     def __getitem__(self, position: PositionIterable) -> TermLike:
-        position_copy = tuple(position)
-        term = self
+        position_copy: Position = tuple(position)
 
-        for index in position_copy:
+        # We'll iterate over the indices in the position. We get an explicit
+        # iterator because we may need to call __getitem__ on one of our
+        # subterms, and it gives us a way to say "the rest of the position".
+        position_iter = iter(position_copy)
+
+        # Keep track of the current subterm.
+        current_term: Term = self
+
+        for index in position_iter:
             try:
-                term = term.children[index]
+                child: TermLike = current_term.children[index]
+
+                if isinstance(child, Term):
+                    # If this subterm is still a Term, we can keep iterating
+                    # rather than recursing.
+                    current_term = child
+                else:
+                    # Otherwise we need to recurse and let the subterm handle
+                    # it. The iterator contains the suffix of the position we
+                    # haven't inspected yet.
+                    return child[position_iter]
+
+            # If either there's no child at the index, or if the recursive call
+            # throws, we will report the error for the entire position. We
+            # saved a copy for just this occasion.
             except IndexError as ex:
                 raise IndexError(f'Invalid position: {position_copy}')
 
-        return term
+        return current_term
 
     def subterms(self) -> Iterable[Tuple[Position, TermLike]]:
         yield ((), self)
