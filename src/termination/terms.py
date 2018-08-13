@@ -99,6 +99,14 @@ class Variable(TerminalSymbol):
         return f'?{self.name}'
 
 
+@dataclass(frozen=True)
+class IndexedVariable(Variable):
+    index: int
+
+    def __str__(self) -> str:
+        return f'?{self.name}#{self.index}'
+
+
 @singledispatch
 def variables(value: Any) -> Iterable[Variable]:
     if hasattr(value, '_variables') and callable(value._variables):
