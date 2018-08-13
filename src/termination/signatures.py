@@ -11,7 +11,7 @@ from dataclasses import dataclass, field
 from typing import Any, Generic, Optional, Type, TypeVar
 
 from .pools import VariablePool, fresh
-from .term import Constant, Function, Variable
+from .terms import Constant, Function, Variable
 
 
 T = TypeVar('T')
@@ -20,7 +20,7 @@ U = TypeVar('U')
 
 @dataclass
 class ReadOnlyDescriptor(Generic[T], metaclass=ABCMeta):
-    name: Optional[str] = field(default=None)
+    name: Optional[str] = field(init=False, default=None)
 
     @abstractmethod
     def _create_value(self, instance: U, owner: Type[U]) -> T:
@@ -32,7 +32,7 @@ class ReadOnlyDescriptor(Generic[T], metaclass=ABCMeta):
 
     def __get__(self, instance: U, owner: Type[U]) -> T:
         if self.name not in instance.__dict__:
-            instance.__dict__[self.name] = self._create_symbol()
+            instance.__dict__[self.name] = self._create_value()
         return instance.__dict__[self.name]
 
     def __set__(self, instance: U, owner: Type[U]) -> None:
@@ -85,7 +85,7 @@ class Signature:
 
 @fresh.register
 def _fresh_signature(signature: Signature) -> Variable:
-    return signature._signature_variable_pool.fresh('')
+    return fresh(signature._signature_variable_pool)
 
 
 def arity(arity) -> Any:
