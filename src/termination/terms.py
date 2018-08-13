@@ -18,7 +18,7 @@ __all__ = [
 
 
 from abc import ABCMeta, abstractmethod
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from functools import singledispatch
 from typing import Any, Iterable, Tuple, TypeVar
 
@@ -122,7 +122,7 @@ def _(variable: Variable) -> Iterable[Variable]:
 @dataclass(frozen=True)
 class Term(TermLike):
     root: Function
-    children: Tuple[TermLike] = field(default_factory=tuple)
+    children: Tuple[TermLike]
 
     def __post_init__(self) -> None:
         arity = self.root.arity
