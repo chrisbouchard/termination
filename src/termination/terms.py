@@ -8,6 +8,7 @@ Term: Application of a function symbol to one or more child terms.
 
 __all__ = [
     'Constant',
+    'IndexedVariable',
     'Position',
     'PositionIterable',
     'Function',
@@ -22,15 +23,16 @@ from dataclasses import dataclass
 from functools import singledispatch
 from typing import Any, Iterable, Tuple, TypeVar
 
+from typing_extensions import Protocol, runtime
 
-Position = Tuple[int]
+Position = Tuple[int, ...]
 PositionIterable = Iterable[int]
 
 T = TypeVar('T')
 
 
 class TermLike(metaclass=ABCMeta):
-    """Abtract base class for things that can act as subterms.
+    """Abstract base class for things that can act as subterms.
 
     In addition to the listed abstract methods, implementations should respond
     to the free variables() function.
@@ -45,7 +47,7 @@ class TermLike(metaclass=ABCMeta):
         pass
 
     def positions(self) -> Iterable[Position]:
-        yield from (term for (position, term) in self.subterms())
+        yield from (position for (position, term) in self.subterms())
 
 
 @dataclass(frozen=True)
@@ -107,22 +109,32 @@ class IndexedVariable(Variable):
         return f'?{self.name}#{self.index}'
 
 
+@runtime
+class SupportsVariables(Protocol):
+    @abstractmethod
+    def _variables(self) -> Iterable[Variable]:
+        ...
+
+
 @singledispatch
 def variables(value: Any) -> Iterable[Variable]:
-    if hasattr(value, '_variables') and callable(value._variables):
-        return value._variables()
     raise ValueError('Value does not have variables')
 
 
 @variables.register
-def _(variable: Variable) -> Iterable[Variable]:
+def variables_variable(variable: Variable) -> Iterable[Variable]:
     yield variable
+
+
+@variables.register
+def variables_supports_variables(value: SupportsVariables) -> Iterable[Variable]:
+    return value._variables()
 
 
 @dataclass(frozen=True)
 class Term(TermLike):
     root: Function
-    children: Tuple[TermLike]
+    children: Tuple[TermLike, ...]
 
     def __post_init__(self) -> None:
         arity = self.root.arity

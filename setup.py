@@ -34,7 +34,8 @@ setup(
     },
     test_suite='nose.collector',
     install_requires=[
-        'anytree>=2.4,<2.5'
+        'anytree>=2.4,<2.5',
+        'typing_extensions>=3.6,<4'
     ],
     setup_requires=[
         'flake8'

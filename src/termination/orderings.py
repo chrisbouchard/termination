@@ -1,6 +1,11 @@
+from abc import abstractmethod, abstractproperty
 from dataclasses import dataclass
 from functools import wraps
-from typing import Any, Callable, Generic, TypeVar
+from typing import Any, Callable, Dict, Generic, TypeVar, Union
+
+from mypy_extensions import KwArg
+
+from typing_extensions import Protocol
 
 __all__ = ['ordering']
 
@@ -8,48 +13,83 @@ __all__ = ['ordering']
 T = TypeVar('T')
 
 
-@dataclass
-class OrderedValue(Generic[T]):
-    value: Any
-    constructor: Callable[[Any], T]
+class Comparable(Protocol):
+    def __lt__(self: T, other: T) -> Any:
+        pass
 
-    def _evaluate_left(self) -> T:
-        return self.constructor(self.value)
+    def __le__(self: T, other: T) -> Any:
+        pass
 
-    def _evaluate_right(self, right: Any) -> T:
-        if isinstance(right, OrderedValue):
-            return self.constructor(right.value)
+    def __gt__(self: T, other: T) -> Any:
+        pass
 
-        return self.constructor(right)
+    def __ge__(self: T, other: T) -> Any:
+        pass
 
-    def __lt__(self, right: Any) -> Any:
+
+C = TypeVar('C', bound=Comparable)
+
+ConstructorFn = Callable[[T, KwArg()], C]
+OrderingFn = Callable[[T, KwArg()], 'AbstractOrderedValue[T, C]']
+
+ComparisonRHS = Union[T, 'AbstractOrderedValue[T, Any]']
+
+
+class AbstractOrderedValue(Generic[T, C]):
+    @abstractproperty
+    def value(self) -> T:
+        pass
+
+    @abstractmethod
+    def _construct_comparable(self, value: T) -> C:
+        pass
+
+    def __lt__(self, right: ComparisonRHS[T]) -> Any:
         return self._evaluate_left() < self._evaluate_right(right)
 
-    def __le__(self, right: Any) -> Any:
+    def __le__(self, right: ComparisonRHS[T]) -> Any:
         return self._evaluate_left() <= self._evaluate_right(right)
 
-    def __gt__(self, right: Any) -> Any:
+    def __gt__(self, right: ComparisonRHS[T]) -> Any:
         return self._evaluate_left() > self._evaluate_right(right)
 
-    def __ge__(self, right: Any) -> Any:
+    def __ge__(self, right: ComparisonRHS[T]) -> Any:
         return self._evaluate_left() >= self._evaluate_right(right)
 
     def __eq__(self, right: Any) -> Any:
-        return self._evaluate_left() == self._evaluate_right(right)
+        return self.value == self._unwrap_right(right)
 
     def __ne__(self, right: Any) -> Any:
-        return self._evaluate_left() != self._evaluate_right(right)
+        return self.value != self._unwrap_right(right)
+
+    def _evaluate_left(self) -> C:
+        return self._construct_comparable(self.value)
+
+    def _evaluate_right(self, right: ComparisonRHS[T]) -> C:
+        if isinstance(right, AbstractOrderedValue):
+            return self._construct_comparable(right.value)
+        return self._construct_comparable(right)
+
+    def _unwrap_right(self, right: Any) -> Any:
+        if isinstance(right, AbstractOrderedValue):
+            return right.value
+        return right
 
 
-def ordering(constructor: Callable[..., T]) -> Callable[..., OrderedValue[T]]:
+def ordering(constructor: ConstructorFn[T, C]) -> OrderingFn[T, C]:
+    @dataclass
+    class OrderedValue(AbstractOrderedValue[T, C]):
+        value: T
+        kwargs: Dict[str, Any]
+
+        def _construct_comparable(self, value: T) -> C:
+            return constructor(value, **self.kwargs)
+
     @wraps(constructor)
-    def wrapped_constructor(value: Any, **kwargs: Any) -> OrderedValue[T]:
-        def apply_constructor(value: Any) -> T:
-            return constructor(value, **kwargs)
-
+    def wrapped_constructor(value: T, **kwargs: Any) -> OrderedValue:
         return OrderedValue(
             value=value,
-            constructor=apply_constructor
+            kwargs=kwargs
         )
 
     return wrapped_constructor

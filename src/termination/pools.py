@@ -4,7 +4,6 @@ __all__ = [
 ]
 
 
-from collections import defaultdict
 from dataclasses import dataclass, field
 from functools import singledispatch
 from typing import Any, Dict, Optional

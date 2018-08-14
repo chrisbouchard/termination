@@ -6,7 +6,7 @@ from termination.terms import IndexedVariable, Variable
 
 class TestPool(TestCase):
     def test_create(self):
-        pool = VariablePool()
+        VariablePool()
 
     def test_get(self):
         pool = VariablePool()
@@ -97,7 +97,7 @@ class TestFresh(TestCase):
         x1 = fresh(x)
         x2 = fresh(x1)
 
-        x10 = pool.get('x', 10)
+        pool.get('x', 10)
 
         x11 = fresh(x1)
 

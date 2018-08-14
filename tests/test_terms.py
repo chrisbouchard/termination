@@ -57,29 +57,29 @@ class TestTerm(TestCase):
 
     def test_getitem_subterm(self):
         self.assertEqual(self.term[(0,)], self.g_subterm)
-        self.assertEqual(self.term[(0,0)], self.vars['x'])
+        self.assertEqual(self.term[(0, 0)], self.vars['x'])
         self.assertEqual(self.term[(1,)], self.f_subterm)
-        self.assertEqual(self.term[(1,0)], self.vars['y'])
-        self.assertEqual(self.term[(1,1)], self.vars['z'])
+        self.assertEqual(self.term[(1, 0)], self.vars['y'])
+        self.assertEqual(self.term[(1, 1)], self.vars['z'])
 
     def test_getitem_invalid(self):
         with self.assertRaises(IndexError):
             self.term[(2,)]
         with self.assertRaises(IndexError):
-            self.term[(0,1)]
+            self.term[(0, 1)]
         with self.assertRaises(IndexError):
-            self.term[(1,2)]
+            self.term[(1, 2)]
         with self.assertRaises(IndexError):
-            self.term[(0,0,1)]
+            self.term[(0, 0, 1)]
 
     def test_subterms(self):
         expected_subterm_set = {
             ((), self.term),
             ((0,), self.g_subterm),
-            ((0,0), self.vars['x']),
+            ((0, 0), self.vars['x']),
             ((1,), self.f_subterm),
-            ((1,0), self.vars['y']),
-            ((1,1), self.vars['z'])
+            ((1, 0), self.vars['y']),
+            ((1, 1), self.vars['z'])
         }
 
         actual_subterm_set = set(self.term.subterms())
