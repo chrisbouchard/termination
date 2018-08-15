@@ -10,23 +10,21 @@ from typing_extensions import Protocol
 __all__ = ['ordering']
 
 
-T = TypeVar('T')
-
-
 class Comparable(Protocol):
-    def __lt__(self: T, other: T) -> Any:
+    def __lt__(self, other: Any) -> Any:
         pass
 
-    def __le__(self: T, other: T) -> Any:
+    def __le__(self, other: Any) -> Any:
         pass
 
-    def __gt__(self: T, other: T) -> Any:
+    def __gt__(self, other: Any) -> Any:
         pass
 
-    def __ge__(self: T, other: T) -> Any:
+    def __ge__(self, other: Any) -> Any:
         pass
 
 
+T = TypeVar('T')
 C = TypeVar('C', bound=Comparable)
 
 ConstructorFn = Callable[[T, KwArg()], C]

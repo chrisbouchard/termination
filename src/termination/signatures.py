@@ -10,7 +10,7 @@ from abc import abstractmethod
 from dataclasses import dataclass, field
 from typing import Any, Generic, Optional, Type, TypeVar
 
-from .pools import VariablePool, fresh
+from .pools import VariablePool, fresh_variable
 from .terms import Constant, Function, Variable
 
 
@@ -92,9 +92,9 @@ class Signature:
                 value.pool_name = '_signature_variable_pool'
 
 
-@fresh.register
-def _fresh_signature(signature: Signature) -> Variable:
-    return fresh(signature._signature_variable_pool)
+@fresh_variable.register
+def _fresh_variable_signature(signature: Signature) -> Variable:
+    return fresh_variable(signature._signature_variable_pool)
 
 
 def arity(arity) -> Any:
