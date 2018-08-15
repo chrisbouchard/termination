@@ -1,4 +1,6 @@
-__all__ = [
+"""Module for conveniently defining signatures with one or more symbols"""
+
+_all__ = [
     'Signature',
     'arity',
     'constant',
@@ -7,89 +9,86 @@ __all__ = [
 
 
 from abc import abstractmethod
-from dataclasses import dataclass, field
-from typing import Any, Generic, Optional, Type, TypeVar
+from typing import Generic, Optional, Type, TypeVar, Union, overload
 
 from .pools import VariablePool, fresh_variable
 from .terms import Constant, Function, Variable
 
 
+S = TypeVar('S', bound='SignatureDescriptor')
 T = TypeVar('T')
-U = TypeVar('U')
 
 
-class ReadOnlyDescriptor(Generic[T]):
-    name: Optional[str]
+class SignatureDescriptor(Generic[T]):
+    def __init__(self):
+        self._name = None  # type: Optional[str]
 
     @abstractmethod
-    def _create_value(self, instance: U, owner: Type[U]) -> T:
+    def _create_value(self, instance: 'Signature') -> T:
         pass
 
-    def __set_name__(self, owner: Type[U], name: str) -> None:
-        if self.name is None:
-            self.name = name
-
-    def __get__(self, instance: U, owner: Type[U]) -> T:
-        if self.name is None:
+    @property
+    def name(self) -> str:
+        if self._name is None:
             raise AttributeError('Attribute name is not set')
+        return self._name
+
+    def __set_name__(self, owner: Type['Signature'], name: str) -> None:
+        if self._name is None:
+            self._name = name
+
+    @overload
+    def __get__(self: S, instance: None, owner: Type['Signature']) -> S:
+        pass
+
+    @overload  # noqa: F811  # Ignore redefinition for overload
+    def __get__(self, instance: 'Signature', owner: Type['Signature']) -> T:
+        pass
+
+    def __get__(  # noqa: F811  # Ignore redefinition for overload
+        self: S,
+        instance: Optional['Signature'],
+        owner: Type['Signature']
+    ) -> Union[S, T]:
+        if instance is None:
+            return self
+
         if self.name not in instance.__dict__:
-            instance.__dict__[self.name] = self._create_value(instance, owner)
+            instance.__dict__[self.name] = self._create_value(instance)
+
         return instance.__dict__[self.name]
 
-    def __set__(self, instance: U, owner: Type[U]) -> None:
+    def __set__(self, instance: 'Signature', owner: Type['Signature']) -> None:
         raise AttributeError('Symbols are read-only')
 
 
-@dataclass
-class ConstantDescriptor(ReadOnlyDescriptor[Constant]):
-    name: Optional[str] = field(init=False)
-
-    def _create_value(self, instance: T, owner: Type[T]) -> Constant:
-        if self.name is None:
-            raise AttributeError('Attribute name is not set')
+class ConstantDescriptor(SignatureDescriptor[Constant]):
+    def _create_value(self, _: object) -> Constant:
         return Constant(name=self.name)
 
 
-@dataclass
-class FunctionDescriptor(ReadOnlyDescriptor[Function]):
-    arity: int
-    name: Optional[str] = field(init=False)
+class FunctionDescriptor(SignatureDescriptor[Function]):
+    def __init__(self, arity: int) -> None:
+        super().__init__()
+        self.arity = arity
 
-    def _create_value(self, instance: T, owner: Type[T]) -> Function:
-        if self.name is None:
-            raise AttributeError('Attribute name is not set')
+    def _create_value(self, _: object) -> Function:
         return Function(name=self.name, arity=self.arity)
 
 
-@dataclass
-class VariableDescriptor(ReadOnlyDescriptor[Variable]):
-    pool_name: Optional[str] = None
-    name: Optional[str] = field(init=False)
-
-    def _create_value(self, instance: T, owner: Type[T]) -> Variable:
-        if self.name is None:
-            raise AttributeError('Attribute name is not set')
-        if self.pool_name is None:
-            raise AttributeError('Owner is not associated with a variable pool')
-
-        pool = getattr(instance, self.pool_name)
+class VariableDescriptor(SignatureDescriptor[Variable]):
+    def _create_value(self, instance: 'Signature') -> Variable:
+        pool = instance._signature_variable_pool
         return pool[self.name]
 
 
-@dataclass
-class VariablePoolDescriptor(ReadOnlyDescriptor[VariablePool]):
-    def _create_value(self, instance: T, owner: Type[T]) -> VariablePool:
+class VariablePoolDescriptor(SignatureDescriptor[VariablePool]):
+    def _create_value(self, _: object) -> VariablePool:
         return VariablePool()
 
 
 class Signature:
-    def __init_subclass__(cls, **kwargs) -> None:
-        cls._signature_variable_pool = VariablePoolDescriptor()
-        super().__init_subclass__(**kwargs)
-
-        for value in cls.__dict__.values():
-            if isinstance(value, VariableDescriptor):
-                value.pool_name = '_signature_variable_pool'
+    _signature_variable_pool = VariablePoolDescriptor()
 
 
 @fresh_variable.register
@@ -97,19 +96,15 @@ def _fresh_variable_signature(signature: Signature) -> Variable:
     return fresh_variable(signature._signature_variable_pool)
 
 
-def arity(arity) -> Any:
-    if arity < 0:
+def arity(arity) -> FunctionDescriptor:
+    if arity <= 0:
         raise ValueError('Arity must be non-negative.')
-
-    if arity == 0:
-        return constant()
-
     return FunctionDescriptor(arity=arity)
 
 
-def constant() -> Any:
+def constant() -> ConstantDescriptor:
     return ConstantDescriptor()
 
 
-def variable() -> Any:
+def variable() -> VariableDescriptor:
     return VariableDescriptor()

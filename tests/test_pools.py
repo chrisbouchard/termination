@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from termination.pools import VariablePool, fresh
+from termination.pools import VariablePool, fresh_variable
 from termination.terms import IndexedVariable, Variable
 
 
@@ -52,11 +52,11 @@ class TestPool(TestCase):
     def test_fresh(self):
         pool = VariablePool()
 
-        x1 = pool.fresh('x')
-        x2 = pool.fresh('x')
-        y1 = pool.fresh('y')
-        x3 = pool.fresh('x')
-        y2 = pool.fresh('y')
+        x1 = pool.get_fresh('x')
+        x2 = pool.get_fresh('x')
+        y1 = pool.get_fresh('y')
+        x3 = pool.get_fresh('x')
+        y2 = pool.get_fresh('y')
 
         self.assertIsInstance(x1, IndexedVariable)
         self.assertEqual('x', x1.name)
@@ -80,8 +80,8 @@ class TestFresh(TestCase):
         pool = VariablePool()
         x = pool['x']
 
-        x1 = fresh(x)
-        x2 = fresh(x)
+        x1 = fresh_variable(x)
+        x2 = fresh_variable(x)
 
         self.assertIsInstance(x1, IndexedVariable)
         self.assertEqual('x', x1.name)
@@ -94,12 +94,12 @@ class TestFresh(TestCase):
         pool = VariablePool()
         x = pool['x']
 
-        x1 = fresh(x)
-        x2 = fresh(x1)
+        x1 = fresh_variable(x)
+        x2 = fresh_variable(x1)
 
         pool.get('x', 10)
 
-        x11 = fresh(x1)
+        x11 = fresh_variable(x1)
 
         self.assertIsInstance(x1, IndexedVariable)
         self.assertEqual('x', x1.name)
@@ -114,8 +114,8 @@ class TestFresh(TestCase):
     def test_fresh_pool(self):
         pool = VariablePool()
 
-        v1 = fresh(pool)
-        v2 = fresh(pool)
+        v1 = fresh_variable(pool)
+        v2 = fresh_variable(pool)
 
         self.assertIsInstance(v1, IndexedVariable)
         self.assertEqual('', v1.name)
@@ -130,10 +130,10 @@ class TestFresh(TestCase):
         z = 5
 
         with self.assertRaises(ValueError):
-            fresh(x)
+            fresh_variable(x)
 
         with self.assertRaises(ValueError):
-            fresh(y1)
+            fresh_variable(y1)
 
         with self.assertRaises(ValueError):
-            fresh(z)
+            fresh_variable(z)
