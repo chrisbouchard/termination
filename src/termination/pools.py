@@ -1,3 +1,11 @@
+"""A module for creating variable pools.
+
+Variable pools are sources of new variables. They have the ability to create
+"fresh" indexed variables, meaning variables whose indexes have never been
+returned from that pool previously. This can be necessary as variables with the
+same name and index are considered equal.
+"""
+
 __all__ = [
     'VariablePool',
     'fresh_variable'
@@ -23,12 +31,31 @@ class VariableState:
 
 @dataclass
 class VariablePool:
+    """A class for creating variables.
+
+    A variable pool has methods to get variables with specific indexes, and
+    methods for creating "fresh" variables, meaning variables whose indexes
+    have never been returned from this pool previously.
+    """
+
     state: Dict[str, VariableState] = field(default_factory=dict)
 
     def __getitem__(self, name: str) -> Variable:
+        """Return the the variable with the given name.
+
+        Subsequent calls to the same pool for the same name are guaranteed to return
+        the same variable instance.
+        """
         return self.get(name)
 
     def get(self, name: str, index: Optional[int] = None) -> Variable:
+        """Return a variable with the given name and index.
+
+        If called with index != None, this method always returns a new variable
+        instance. If called with index == None, subsequent calls to the same
+        pool for the same name are guaranteed to return the same variable
+        instance.
+        """
         if index is None:
             return self._get_state(name).variable
 
@@ -36,6 +63,12 @@ class VariablePool:
         return IndexedPoolVariable(name=name, index=index, pool=self)
 
     def get_fresh(self, name: str) -> Variable:
+        """Return a variable with the given name and a unique index.
+
+        This method always returns a new variable instance, and its index is
+        always guaranteed to be greater than the index of any variable returned
+        by this pool previously.
+        """
         index = self._get_state(name).next_index
         return self.get(name, index)
 
@@ -57,7 +90,16 @@ class IndexedPoolVariable(IndexedVariable):
 
 
 @singledispatch
-def fresh_variable(variable: Any) -> Variable:
+def fresh_variable(source: Any) -> Variable:
+    """Return a fresh variable from a given source.
+
+    Different sources will respond differently to this function. The returned
+    variable is guaranteed to have a unique index for its name. The name of the
+    variable depends on the source.
+
+    * For variables: The name is the name of the variable passed.
+    * For variable pools: The name is an empty string ('').
+    """
     raise ValueError('Value is not associated with a variable pool')
 
 

@@ -1,3 +1,29 @@
+"""Module creating ordering functions.
+
+An ordering function is applied as:
+
+    my_ord(t1, foo=42) < t2
+
+Which will be evaluated as:
+
+    my_ord(t1, foo=42) < my_ord(t2, foo=42)
+
+At the simplest, this saves the user from having to specify the ordering twice,
+and ensures that the arguments passed to the orderings will be the same on both
+sides of the comparison. But there is a further benefit. In the case of:
+
+    ord1(t1, foo=42) < ord2(t2) < t3
+
+This will be evaluated as:
+
+    (ord1(t1, foo=42) < ord1(t2, foo=42)) and (ord2(t2) < ord2(t3))
+
+In other words, if the right-hand-side of an ordering comparison is another
+ordering function, the value is pulled out and the left-hand function is
+applied, allowing chains of different ordering comparisons, which is a very
+common style in term rewriting.
+"""
+
 from abc import abstractmethod, abstractproperty
 from dataclasses import dataclass
 from functools import wraps
@@ -75,6 +101,13 @@ class AbstractOrderedValue(Generic[T, C]):
 
 
 def ordering(constructor: ConstructorFn[T, C]) -> OrderingFn[T, C]:
+    """Decorate a function to create an ordering function.
+
+    The decorated function should take a single positional argument and any
+    number of keyword arguments, and return something comparable. After
+    decoration, the resulting function will behave as an ordering function, as
+    described in the module docstring.
+    """
     @dataclass
     class OrderedValue(AbstractOrderedValue[T, C]):
         value: T

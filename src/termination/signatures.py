@@ -1,4 +1,4 @@
-"""Module for conveniently defining signatures with one or more symbols"""
+"""A module for conveniently defining signatures with one or more symbols."""
 
 __all__ = [
     'Signature',
@@ -88,6 +88,11 @@ class VariablePoolDescriptor(SignatureDescriptor[VariablePool]):
 
 
 class Signature:
+    """Base class for signatures.
+
+    fresh_variable(Signature): Returns a fresh variable with an empty ('') name.
+    """
+
     _signature_variable_pool = VariablePoolDescriptor()
 
 
@@ -97,14 +102,57 @@ def _fresh_variable_signature(signature: Signature) -> Variable:
 
 
 def arity(arity) -> FunctionDescriptor:
+    """Create a function symbol descriptor.
+
+    For example::
+
+        class Foo(Signature):
+            f = arity(2)
+            x = variable()
+            y = variable()
+
+        foo = Foo()
+        t = foo.f(foo.x, foo.y)  # OK
+    """
     if arity <= 0:
         raise ValueError('Arity must be non-negative.')
     return FunctionDescriptor(arity=arity)
 
 
 def constant() -> ConstantDescriptor:
+    """Create a constant descriptor.
+
+    For example::
+
+        class Foo(Signature):
+            g = arity(1)
+            a = constant()
+            b = constant()
+
+        foo = Foo()
+        t = foo.g(foo.a)  # OK
+    """
     return ConstantDescriptor()
 
 
 def variable() -> VariableDescriptor:
+    """Create a variable descriptor.
+
+    For example::
+
+        class Foo(Signature):
+            f = arity(2)
+            x = variable()
+            y = variable()
+
+        foo = Foo()
+        t = foo.f(foo.x, foo.y)  # OK
+
+    The signature also creates a backing variable pool, so that::
+
+        fresh_variable(foo.x)
+
+    Works as expected, with the resulting index unique among indices produced
+    from that signature instance.
+    """
     return VariableDescriptor()

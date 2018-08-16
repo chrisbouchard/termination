@@ -1,7 +1,13 @@
+"""Installation script for the termination package."""
+
+__author__ = 'Chris Bouchard <chris@upliftinglemma.net>'
+
+
 import re
 import sys
 
 from setuptools import find_packages, setup
+
 
 with open('src/termination/__init__.py', 'r') as fh:
     version = re.search(
@@ -18,6 +24,7 @@ try:
     setup_hook(sys.argv)
 except ImportError:
     pass
+
 
 setup(
     name='termination',
@@ -49,5 +56,5 @@ setup(
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python',
-    ],
+    ]
 )
