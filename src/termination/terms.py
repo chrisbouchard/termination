@@ -25,6 +25,7 @@ from typing import Any, Iterable, Tuple, TypeVar
 
 from typing_extensions import Protocol, runtime
 
+
 Position = Tuple[int, ...]
 PositionIterable = Iterable[int]
 

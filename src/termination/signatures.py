@@ -1,6 +1,6 @@
 """Module for conveniently defining signatures with one or more symbols"""
 
-_all__ = [
+__all__ = [
     'Signature',
     'arity',
     'constant',
