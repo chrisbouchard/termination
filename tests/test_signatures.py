@@ -1,12 +1,18 @@
+"""Unit tests for the termination.signatures module."""
+
+
 from unittest import TestCase
 
-from termination.pools import fresh_variable
 from termination.signatures import Signature, arity, constant, variable
-from termination.terms import Constant, Function, Term, Variable
+from termination.terms import Constant, Function, Variable
 
 
 class TestSignature(TestCase):
+    """Test case for the Signature class."""
+
     class SimpleSignature(Signature):
+        """Simple signature for testing."""
+
         f = arity(2)
         g = arity(1)
         a = constant()
@@ -15,9 +21,11 @@ class TestSignature(TestCase):
         y = variable()
 
     def test_signature(self):
+        """Test that a signature can be instantiated."""
         self.SimpleSignature()
 
     def test_signature_descriptors(self):
+        """Test that the symbols are created correctly."""
         s = self.SimpleSignature()
 
         with self.subTest(name='f'):
