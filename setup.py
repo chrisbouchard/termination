@@ -48,7 +48,8 @@ setup(
         'flake8>=3.5,<4'
     ],
     tests_require=[
-        'nose>=1.3,<2'
+        'nose>=1.3,<2',
+        'coverage>=4.5,<5'
     ],
     classifiers=[
         'License :: OSI Approved :: MIT License',
