@@ -21,11 +21,11 @@ class TestSignature(TestCase):
         y = variable()
 
     def test_signature(self):
-        """Test that a signature can be instantiated."""
+        """A Signature can be instantiated."""
         self.SimpleSignature()
 
     def test_signature_descriptors(self):
-        """Test that the symbols are created correctly."""
+        """A Signature's symbols are created correctly."""
         s = self.SimpleSignature()
 
         with self.subTest(name='f'):

@@ -45,10 +45,10 @@ setup(
         'typing_extensions>=3.6,<4'
     ],
     setup_requires=[
-        'flake8'
+        'flake8>=3.5,<4'
     ],
     tests_require=[
-        'nose'
+        'nose>=1.3,<2'
     ],
     classifiers=[
         'License :: OSI Approved :: MIT License',
