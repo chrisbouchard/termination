@@ -7,7 +7,6 @@ from termination.pools import VariablePool, fresh_variable
 from termination.terms import IndexedVariable, Variable
 
 
-# TODO: Test that different pools have independent fresh variable indices.
 class TestPool(TestCase):
     """Test case for the VariblePool class."""
 
@@ -89,9 +88,24 @@ class TestPool(TestCase):
         self.assertEqual('y', y2.name)
         self.assertEqual(2, y2.index)
 
+    def test_independent_pools(self):
+        """Different VariablePools have independent fresh indices."""
+        pool1 = VariablePool()
+        pool2 = VariablePool()
 
-# TODO: Test that fresh_variable increments the underlying pool's fresh
-# variable index.
+        x1_1 = pool1.get_fresh('x')
+        x1_2 = pool1.get_fresh('x')
+        x2_1 = pool2.get_fresh('x')
+        x1_3 = pool1.get_fresh('x')
+        x2_2 = pool2.get_fresh('x')
+
+        self.assertEqual(1, x1_1.index)
+        self.assertEqual(2, x1_2.index)
+        self.assertEqual(3, x1_3.index)
+        self.assertEqual(1, x2_1.index)
+        self.assertEqual(2, x2_2.index)
+
+
 class TestFreshVariable(TestCase):
     """Test case for the fresh_variabe function."""
 
@@ -164,3 +178,16 @@ class TestFreshVariable(TestCase):
 
         with self.assertRaises(ValueError):
             fresh_variable(z)
+
+    def test_fresh_shares_index(self):
+        """The fresh_variable function uses the same fresh index as get_fresh."""
+        pool = VariablePool()
+        x = pool['x']
+
+        x1 = fresh_variable(x)
+        x2 = pool.get_fresh('x')
+        x3 = fresh_variable(x)
+
+        self.assertEqual(1, x1.index)
+        self.assertEqual(2, x2.index)
+        self.assertEqual(3, x3.index)
