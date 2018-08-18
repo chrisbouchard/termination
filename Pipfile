@@ -5,6 +5,9 @@ name = "pypi"
 
 [packages]
 "e1839a8" = {path = ".", editable = true}
+anytree = ">=2.4, <2.5"
+frozendict = ">=1.2, <2"
+typing_extensions = ">=3.6, <4"
 
 [dev-packages]
 coverage = "*"

@@ -81,12 +81,12 @@ class VariablePool:
 
 @dataclass(frozen=True)
 class PoolVariable(Variable):
-    pool: VariablePool
+    pool: VariablePool = field(compare=False)
 
 
 @dataclass(frozen=True)
 class IndexedPoolVariable(IndexedVariable):
-    pool: VariablePool
+    pool: VariablePool = field(compare=False)
 
 
 @singledispatch

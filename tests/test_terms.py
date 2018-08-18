@@ -1,11 +1,17 @@
 """Unit tests for the termination.terms module."""
+# TODO: Test substitutions on different objects
+# TODO: Test len() on different objects
+# TODO: Test in on different objects
+# TODO: Test Constant
 
 
 from unittest import TestCase
 
 from termination.terms import (
+    Constant,
     Function,
     IndexedVariable,
+    Substitution,
     Term,
     Variable,
     variables
@@ -41,7 +47,7 @@ class TestVariable(TestCase):
     def test_getitem_invalid(self):
         """A Variable has no non-root position."""
         x = Variable(name='x')
-        with self.assertRaises(IndexError):
+        with self.assertRaises(KeyError):
             x[(0,)]
 
     def test_subterms(self):
@@ -85,7 +91,7 @@ class TestIndexedVariable(TestCase):
     def test_getitem_invalid(self):
         """An IndexedVariable has no non-root position."""
         x = IndexedVariable(name='x', index=1)
-        with self.assertRaises(IndexError):
+        with self.assertRaises(KeyError):
             x[(0,)]
 
     def test_subterms(self):
@@ -154,13 +160,13 @@ class TestTerm(TestCase):
 
     def test_getitem_invalid(self):
         """A Term does not support getting invalid positions."""
-        with self.assertRaises(IndexError):
+        with self.assertRaises(KeyError):
             self.term[(2,)]
-        with self.assertRaises(IndexError):
+        with self.assertRaises(KeyError):
             self.term[(0, 1)]
-        with self.assertRaises(IndexError):
+        with self.assertRaises(KeyError):
             self.term[(1, 2)]
-        with self.assertRaises(IndexError):
+        with self.assertRaises(KeyError):
             self.term[(0, 0, 1)]
 
     def test_subterms(self):
@@ -203,3 +209,60 @@ class TestTerm(TestCase):
         actual_variables = set(variables(self.term))
 
         self.assertEqual(expected_variables, actual_variables)
+
+
+class TestSubstitution(TestCase):
+    """Test case for the Substitution class."""
+
+    def setUp(self) -> None:
+        """Set up useful stuff for testing."""
+        self.f = Function('f', 2)
+        self.g = Function('g', 1)
+
+        self.a = Constant('a')
+        self.b = Constant('b')
+        self.c = Constant('c')
+
+        self.x = Variable('x')
+        self.y = Variable('y')
+        self.z = Variable('z')
+
+    def test_empty_str(self):
+        """An empty substitution formats as a string."""
+        sub = Substitution()
+        expected_str = '{}'
+        actual_str = str(sub)
+
+        self.assertEqual(expected_str, actual_str)
+
+    def test_nonempty_str(self):
+        """A nonempty substitution formats as a string."""
+        sub = Substitution(mapping={
+            self.x: self.f(self.x, self.y),
+            self.y: self.g(self.z)
+        })
+        expected_str = '{?x -> f(?x, ?y), ?y -> g(?z)}'
+        actual_str = str(sub)
+
+        self.assertEqual(expected_str, actual_str)
+
+    def test_substitute(self):
+        """A substitution applies to another substitution."""
+        inner_sub = Substitution(mapping={
+            self.x: self.f(self.x, self.y),
+            self.y: self.g(self.z)
+        })
+        outer_sub = Substitution(mapping={
+            self.x: self.a,
+            self.y: self.b,
+            self.z: self.c
+        })
+
+        expected_sub = Substitution(mapping={
+            self.x: self.f(self.a, self.b),
+            self.y: self.g(self.c),
+            self.z: self.c
+        })
+        actual_sub = outer_sub(inner_sub)
+
+        self.assertEqual(expected_sub, actual_sub)

@@ -41,15 +41,16 @@ setup(
     },
     test_suite='nose.collector',
     install_requires=[
-        'anytree>=2.4,<2.5',
-        'typing_extensions>=3.6,<4'
+        'anytree >=2.4, <2.5',
+        'frozendict >=1.2, <2',
+        'typing_extensions >=3.6, <4'
     ],
     setup_requires=[
-        'flake8>=3.5,<4'
+        'flake8'
     ],
     tests_require=[
-        'nose>=1.3,<2',
-        'coverage>=4.5,<5'
+        'nose',
+        'coverage'
     ],
     classifiers=[
         'License :: OSI Approved :: MIT License',
