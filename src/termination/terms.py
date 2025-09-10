@@ -16,22 +16,11 @@ from collections.abc import Iterable, Iterator, Mapping
 from dataclasses import dataclass, field
 from typing import Never, Protocol, runtime_checkable, Self
 
+
 type Position = tuple[int, ...]
 type PositionIterable = Iterable[int]
 
 type VariableMapping = Mapping[Variable, TermLike]
-
-
-@runtime_checkable
-class SupportsSubstitute[R](Protocol):
-    def _substitute(self, mapping: VariableMapping) -> R:
-        pass
-
-
-@runtime_checkable
-class SupportsVariables(Protocol):
-    def _variables(self) -> Iterator[Variable]:
-        pass
 
 
 class TermLike(Protocol):
@@ -193,25 +182,6 @@ class IndexedVariable(Variable):
         return f"?{self.name}#{self.index}"
 
 
-def variables(value: SupportsVariables) -> Iterator[Variable]:
-    """Return an iterator of the variables in this object.
-
-    The same variable may be yielded in any order and may appear multiple
-    times. If uniqueness is desired, store the results in a set::
-
-        vars = set(variables(obj))
-
-    Different types will define what "in" means in their context.
-
-    * ``Variable``: The variable itself
-    * ``Term``: All variables that occur as subterms.
-    """
-    try:
-        return value._variables()
-    except AttributeError:
-        raise TypeError(f"object of type {type(value).__name__} has no variables()")
-
-
 @dataclass(frozen=True)
 class Term(TermLike):
     """Application of a function symbol to children.
@@ -349,6 +319,37 @@ class Term(TermLike):
     def _variables(self) -> Iterator[Variable]:
         for child in self.children:
             yield from variables(child)
+
+
+@runtime_checkable
+class SupportsVariables(Protocol):
+    def _variables(self) -> Iterator[Variable]:
+        pass
+
+
+def variables(value: SupportsVariables) -> Iterator[Variable]:
+    """Return an iterator of the variables in this object.
+
+    The same variable may be yielded in any order and may appear multiple
+    times. If uniqueness is desired, store the results in a set::
+
+        vars = set(variables(obj))
+
+    Different types will define what "in" means in their context.
+
+    * ``Variable``: The variable itself
+    * ``Term``: All variables that occur as subterms.
+    """
+    try:
+        return value._variables()
+    except AttributeError:
+        raise TypeError(f"object of type {type(value).__name__} has no variables()")
+
+
+@runtime_checkable
+class SupportsSubstitute[R](Protocol):
+    def _substitute(self, mapping: VariableMapping) -> R:
+        pass
 
 
 @dataclass(frozen=True)
