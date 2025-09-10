@@ -20,4 +20,4 @@ dev = [
 ]
 
 [tool.ruff.lint]
-extend-select = ["UP"]
+extend-select = ["UP", "RUF"]

@@ -6,8 +6,12 @@ returned from that pool previously. This can be necessary as variables with the
 same name and index are considered equal.
 """
 
-__all__ = ["VariablePool", "fresh_variable"]
+from __future__ import annotations
 
+__all__ = [
+    "VariablePool",
+    "fresh_variable",
+]
 
 from dataclasses import dataclass, field
 from functools import singledispatch

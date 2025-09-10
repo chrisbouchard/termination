@@ -1,10 +1,16 @@
 """A module for conveniently defining signatures with one or more symbols."""
 
-__all__ = ["Signature", "arity", "constant", "variable"]
+from __future__ import annotations
 
+__all__ = [
+    "Signature",
+    "arity",
+    "constant",
+    "variable",
+]
 
 from abc import abstractmethod
-from typing import Optional, Self, overload
+from typing import Self, overload
 
 from .pools import VariablePool, fresh_variable
 from .terms import Constant, Function, Variable
@@ -12,11 +18,10 @@ from .terms import Constant, Function, Variable
 
 class SignatureDescriptor[T]:
     def __init__(self):
-        self._name = None  # type: Optional[str]
+        self._name: str | None = None
 
     @abstractmethod
-    def _create_value(self, instance: "Signature") -> T:
-        pass
+    def _create_value(self, instance: Signature) -> T: ...
 
     @property
     def name(self) -> str:
@@ -24,21 +29,16 @@ class SignatureDescriptor[T]:
             raise AttributeError("Attribute name is not set")
         return self._name
 
-    def __set_name__(self, owner: type["Signature"], name: str) -> None:
+    def __set_name__(self, owner: type[Signature], name: str) -> None:
         if self._name is None:
             self._name = name
 
     @overload
-    def __get__(self, instance: None, owner: type["Signature"]) -> Self:
-        pass
+    def __get__(self, instance: None, owner: type[Signature]) -> Self: ...
+    @overload
+    def __get__(self, instance: Signature, owner: type[Signature]) -> T: ...
 
-    @overload  # noqa: F811  # Ignore redefinition for overload
-    def __get__(self, instance: "Signature", owner: type["Signature"]) -> T:
-        pass
-
-    def __get__(  # noqa: F811  # Ignore redefinition for overload
-        self, instance: Optional["Signature"], owner: type["Signature"]
-    ) -> Self | T:
+    def __get__(self, instance: Signature | None, owner: type[Signature]) -> Self | T:
         if instance is None:
             return self
 
@@ -47,7 +47,7 @@ class SignatureDescriptor[T]:
 
         return instance.__dict__[self.name]
 
-    def __set__(self, instance: "Signature", owner: type["Signature"]) -> None:
+    def __set__(self, instance: Signature, owner: type[Signature]) -> None:
         raise AttributeError("Symbols are read-only")
 
 
@@ -66,7 +66,7 @@ class FunctionDescriptor(SignatureDescriptor[Function]):
 
 
 class VariableDescriptor(SignatureDescriptor[Variable]):
-    def _create_value(self, instance: "Signature") -> Variable:
+    def _create_value(self, instance: Signature) -> Variable:
         pool = instance._signature_variable_pool
         return pool[self.name]
 

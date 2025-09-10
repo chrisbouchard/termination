@@ -1,49 +1,43 @@
 """Module for syntactic terms and their support."""
 
+from __future__ import annotations
+
 __all__ = [
     "Constant",
-    "IndexedVariable",
     "Function",
+    "IndexedVariable",
     "Substitution",
     "Term",
     "Variable",
     "variables",
 ]
 
-
 from abc import abstractmethod
-from dataclasses import dataclass, field
-from typing import TypeVar
 from collections.abc import Iterable, Iterator, Mapping
+from dataclasses import dataclass, field
+from typing import Never, Protocol, runtime_checkable, Self
 
-from typing_extensions import runtime
-from typing import Protocol
+type Position = tuple[int, ...]
+type PositionIterable = Iterable[int]
 
-
-Position = tuple[int, ...]
-PositionIterable = Iterable[int]
-
-VariableMapping = Mapping["Variable", "TermLike"]
-
-T = TypeVar("T")
-TSub = TypeVar("TSub", covariant=True)
+type VariableMapping = Mapping[Variable, TermLike]
 
 
-@runtime
-class SupportsSubstitute[TSub](Protocol):
+@runtime_checkable
+class SupportsSubstitute[R](Protocol):
     @abstractmethod
-    def _substitute(self, mapping: VariableMapping) -> TSub:
+    def _substitute(self, mapping: VariableMapping) -> R:
         pass
 
 
-@runtime
+@runtime_checkable
 class SupportsVariables(Protocol):
     @abstractmethod
-    def _variables(self) -> Iterator["Variable"]:
+    def _variables(self) -> Iterator[Variable]:
         pass
 
 
-class TermLike(SupportsSubstitute["TermLike"], SupportsVariables, Protocol):
+class TermLike(Protocol):
     """Abstract base class for things that can act as subterms.
 
     In addition to the listed abstract methods, implementations should respond
@@ -51,8 +45,7 @@ class TermLike(SupportsSubstitute["TermLike"], SupportsVariables, Protocol):
     """
 
     @abstractmethod
-    def __getitem__(self, position: PositionIterable) -> "TermLike":
-        pass
+    def __getitem__(self, position: PositionIterable) -> TermLike: ...
 
     def __contains__(self, position: PositionIterable) -> bool:
         try:
@@ -63,15 +56,13 @@ class TermLike(SupportsSubstitute["TermLike"], SupportsVariables, Protocol):
         return True
 
     @abstractmethod
-    def __len__(self) -> int:
-        pass
+    def __len__(self) -> int: ...
 
     @abstractmethod
-    def subterms(self) -> Iterator[tuple[Position, "TermLike"]]:
-        pass
+    def subterms(self) -> Iterator[tuple[Position, TermLike]]: ...
 
     def positions(self) -> Iterator[Position]:
-        yield from (position for (position, term) in self.subterms())
+        yield from (position for (position, _term) in self.subterms())
 
 
 @dataclass(frozen=True)
@@ -81,10 +72,10 @@ class Symbol:
     name: str
 
 
-class TerminalSymbol(Symbol, TermLike):
+class TerminalSymbol(Symbol):
     """Base class for symbols that occur as terms."""
 
-    def __getitem__(self: T, position: PositionIterable) -> T:
+    def __getitem__(self, position: PositionIterable) -> Self:
         position_copy = tuple(position)
         position_iter = iter(position_copy)
 
@@ -98,7 +89,7 @@ class TerminalSymbol(Symbol, TermLike):
     def __len__(self) -> int:
         return 1
 
-    def subterms(self: T) -> Iterator[tuple[Position, T]]:
+    def subterms(self) -> Iterator[tuple[Position, Self]]:
         yield ((), self)
 
 
@@ -128,12 +119,12 @@ class Function(Symbol):
         """
         return f"{self.name}.{self.arity}"
 
-    def __call__(self, *args: TermLike) -> "Term":
+    def __call__(self, *args: TermLike) -> Term:
         """Create a new term with this symbol as the root."""
         return Term(self, args)
 
 
-class Constant(TerminalSymbol, SupportsSubstitute["Constant"]):
+class Constant(TerminalSymbol):
     """A constant symbol.
 
     Constant symbols are term-like symbols with no children. Constants have a
@@ -150,12 +141,11 @@ class Constant(TerminalSymbol, SupportsSubstitute["Constant"]):
         """
         return self.name
 
-    def _substitute(self, mapping: VariableMapping) -> "Constant":
+    def _substitute(self, mapping: VariableMapping) -> Constant:
         return self
 
-    def _variables(self) -> Iterator["Variable"]:
-        # Form some reason, yield from () doesn't typecheck in Mypy.
-        yield from []
+    def _variables(self) -> Iterator[Never]:
+        yield from ()
 
 
 class Variable(TerminalSymbol):
@@ -176,7 +166,7 @@ class Variable(TerminalSymbol):
         """
         return f"?{self.name}"
 
-    def _variables(self: T) -> Iterator[T]:
+    def _variables(self) -> Iterator[Self]:
         yield self
 
     def _substitute(self, mapping: VariableMapping) -> TermLike:
@@ -229,7 +219,7 @@ def variables(value: SupportsVariables) -> Iterator[Variable]:
 
 
 @dataclass(frozen=True)
-class Term(TermLike, SupportsSubstitute["Term"]):
+class Term(TermLike):
     """Application of a function symbol to children.
 
     The root of a term is a function symbol. The symbols arity must match the
@@ -356,7 +346,7 @@ class Term(TermLike, SupportsSubstitute["Term"]):
             for position, term in child.subterms():
                 yield ((index, *position), term)
 
-    def _substitute(self, mapping: VariableMapping) -> "Term":
+    def _substitute(self, mapping: VariableMapping) -> Term:
         return Term(
             root=self.root,
             children=tuple(child._substitute(mapping) for child in self.children),
@@ -380,7 +370,7 @@ class Substitution:
         )
         return f"{{{mapping_str}}}"
 
-    def __call__(self, value: SupportsSubstitute[T]) -> T:
+    def __call__[T](self, value: SupportsSubstitute[T]) -> T:
         """Apply this substitution to the given value."""
         try:
             return value._substitute(self.mapping)
@@ -401,7 +391,7 @@ class Substitution:
         """Return the number of variables explicitly mapped by this substitution."""
         return len(self.mapping)
 
-    def _substitute(self, mapping: VariableMapping) -> "Substitution":
+    def _substitute(self, mapping: VariableMapping) -> Substitution:
         """Apply another substitution to this one.
 
         Applying one substitution to another is defined as composing the

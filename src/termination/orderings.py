@@ -24,12 +24,16 @@ applied, allowing chains of different ordering comparisons, which is a very
 common style in term rewriting.
 """
 
+from __future__ import annotations
+
+__all__ = [
+    "ordering",
+]
+
 from abc import abstractmethod
 from dataclasses import dataclass
 from functools import wraps
 from typing import Any, Protocol
-
-__all__ = ["ordering"]
 
 
 class Comparable(Protocol):
@@ -51,21 +55,19 @@ class ConstructorFn[T, C](Protocol):
 
 
 class OrderingFn[T, C](Protocol):
-    def __call__(self, value: T, /, **kwargs) -> "AbstractOrderedValue[T, C]": ...
+    def __call__(self, value: T, /, **kwargs) -> AbstractOrderedValue[T, C]: ...
 
 
-type ComparisonRHS[T] = T | "AbstractOrderedValue[T, Any]"
+type ComparisonRHS[T] = T | AbstractOrderedValue[T, Any]
 
 
 class AbstractOrderedValue[T, C]:
     @property
     @abstractmethod
-    def value(self) -> T:
-        pass
+    def value(self) -> T: ...
 
     @abstractmethod
-    def _construct_comparable(self, value: T) -> C:
-        pass
+    def _construct_comparable(self, value: T) -> C: ...
 
     def __lt__(self, right: ComparisonRHS[T]) -> Any:
         return self._evaluate_left() < self._evaluate_right(right)
