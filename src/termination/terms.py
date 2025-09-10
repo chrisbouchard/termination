@@ -12,7 +12,6 @@ __all__ = [
     "variables",
 ]
 
-from abc import abstractmethod
 from collections.abc import Iterable, Iterator, Mapping
 from dataclasses import dataclass, field
 from typing import Never, Protocol, runtime_checkable, Self
@@ -25,14 +24,12 @@ type VariableMapping = Mapping[Variable, TermLike]
 
 @runtime_checkable
 class SupportsSubstitute[R](Protocol):
-    @abstractmethod
     def _substitute(self, mapping: VariableMapping) -> R:
         pass
 
 
 @runtime_checkable
 class SupportsVariables(Protocol):
-    @abstractmethod
     def _variables(self) -> Iterator[Variable]:
         pass
 
@@ -44,7 +41,6 @@ class TermLike(Protocol):
     to the free variables() function.
     """
 
-    @abstractmethod
     def __getitem__(self, position: PositionIterable) -> TermLike: ...
 
     def __contains__(self, position: PositionIterable) -> bool:
@@ -55,10 +51,8 @@ class TermLike(Protocol):
 
         return True
 
-    @abstractmethod
     def __len__(self) -> int: ...
 
-    @abstractmethod
     def subterms(self) -> Iterator[tuple[Position, TermLike]]: ...
 
     def positions(self) -> Iterator[Position]:
@@ -72,7 +66,7 @@ class Symbol:
     name: str
 
 
-class TerminalSymbol(Symbol):
+class TerminalSymbol(Symbol, TermLike):
     """Base class for symbols that occur as terms."""
 
     def __getitem__(self, position: PositionIterable) -> Self:

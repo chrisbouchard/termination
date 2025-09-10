@@ -9,14 +9,14 @@ __all__ = [
     "variable",
 ]
 
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 from typing import Self, overload
 
 from .pools import VariablePool, fresh_variable
 from .terms import Constant, Function, Variable
 
 
-class SignatureDescriptor[T]:
+class SignatureDescriptor[T](ABC):
     def __init__(self):
         self._name: str | None = None
 

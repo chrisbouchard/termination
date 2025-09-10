@@ -30,7 +30,7 @@ __all__ = [
     "ordering",
 ]
 
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from functools import wraps
 from typing import Any, Protocol
@@ -61,7 +61,7 @@ class OrderingFn[T, C](Protocol):
 type ComparisonRHS[T] = T | AbstractOrderedValue[T, Any]
 
 
-class AbstractOrderedValue[T, C]:
+class AbstractOrderedValue[T, C](ABC):
     @property
     @abstractmethod
     def value(self) -> T: ...

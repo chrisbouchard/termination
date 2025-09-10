@@ -15,7 +15,7 @@ __all__ = [
 
 from dataclasses import dataclass, field
 from functools import singledispatch
-from typing import Any
+from typing import Any, overload
 
 from .terms import IndexedVariable, Variable
 
@@ -49,6 +49,11 @@ class VariablePool:
         """
         return self.get(name)
 
+    @overload
+    def get(self, name: str) -> Variable: ...
+    @overload
+    def get(self, name: str, index: int) -> IndexedVariable: ...
+
     def get(self, name: str, index: int | None = None) -> Variable:
         """Return a variable with the given name and index.
 
@@ -63,7 +68,7 @@ class VariablePool:
         self._get_state(name).update_index(index)
         return IndexedPoolVariable(name=name, index=index, pool=self)
 
-    def get_fresh(self, name: str) -> Variable:
+    def get_fresh(self, name: str) -> IndexedVariable:
         """Return a variable with the given name and a unique index.
 
         This method always returns a new variable instance, and its index is
