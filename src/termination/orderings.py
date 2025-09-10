@@ -24,16 +24,12 @@ applied, allowing chains of different ordering comparisons, which is a very
 common style in term rewriting.
 """
 
-from abc import abstractmethod, abstractproperty
+from abc import abstractmethod
 from dataclasses import dataclass
 from functools import wraps
-from typing import Any, Callable, Dict, Generic, TypeVar, Union
+from typing import Any, Protocol
 
-from mypy_extensions import KwArg
-
-from typing_extensions import Protocol
-
-__all__ = ['ordering']
+__all__ = ["ordering"]
 
 
 class Comparable(Protocol):
@@ -50,17 +46,20 @@ class Comparable(Protocol):
         pass
 
 
-T = TypeVar('T')
-C = TypeVar('C', bound=Comparable)
-
-ConstructorFn = Callable[[T, KwArg()], C]
-OrderingFn = Callable[[T, KwArg()], 'AbstractOrderedValue[T, C]']
-
-ComparisonRHS = Union[T, 'AbstractOrderedValue[T, Any]']
+class ConstructorFn[T, C](Protocol):
+    def __call__(self, value: T, /, **kwargs) -> C: ...
 
 
-class AbstractOrderedValue(Generic[T, C]):
-    @abstractproperty
+class OrderingFn[T, C](Protocol):
+    def __call__(self, value: T, /, **kwargs) -> "AbstractOrderedValue[T, C]": ...
+
+
+type ComparisonRHS[T] = T | "AbstractOrderedValue[T, Any]"
+
+
+class AbstractOrderedValue[T, C]:
+    @property
+    @abstractmethod
     def value(self) -> T:
         pass
 
@@ -100,7 +99,7 @@ class AbstractOrderedValue(Generic[T, C]):
         return right
 
 
-def ordering(constructor: ConstructorFn[T, C]) -> OrderingFn[T, C]:
+def ordering[T, C: Comparable](constructor: ConstructorFn[T, C]) -> OrderingFn[T, C]:
     """Decorate a function to create an ordering function.
 
     The decorated function should take a single positional argument and any
@@ -108,19 +107,17 @@ def ordering(constructor: ConstructorFn[T, C]) -> OrderingFn[T, C]:
     decoration, the resulting function will behave as an ordering function, as
     described in the module docstring.
     """
+
     @dataclass
     class OrderedValue(AbstractOrderedValue[T, C]):
         value: T
-        kwargs: Dict[str, Any]
+        kwargs: dict[str, Any]
 
         def _construct_comparable(self, value: T) -> C:
             return constructor(value, **self.kwargs)
 
     @wraps(constructor)
     def wrapped_constructor(value: T, **kwargs: Any) -> OrderedValue:
-        return OrderedValue(
-            value=value,
-            kwargs=kwargs
-        )
+        return OrderedValue(value=value, kwargs=kwargs)
 
     return wrapped_constructor

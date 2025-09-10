@@ -1,55 +1,44 @@
 """A module for conveniently defining signatures with one or more symbols."""
 
-__all__ = [
-    'Signature',
-    'arity',
-    'constant',
-    'variable'
-]
+__all__ = ["Signature", "arity", "constant", "variable"]
 
 
 from abc import abstractmethod
-from typing import Generic, Optional, Type, TypeVar, Union, overload
+from typing import Optional, Self, overload
 
 from .pools import VariablePool, fresh_variable
 from .terms import Constant, Function, Variable
 
 
-S = TypeVar('S', bound='SignatureDescriptor')
-T = TypeVar('T')
-
-
-class SignatureDescriptor(Generic[T]):
+class SignatureDescriptor[T]:
     def __init__(self):
         self._name = None  # type: Optional[str]
 
     @abstractmethod
-    def _create_value(self, instance: 'Signature') -> T:
+    def _create_value(self, instance: "Signature") -> T:
         pass
 
     @property
     def name(self) -> str:
         if self._name is None:
-            raise AttributeError('Attribute name is not set')
+            raise AttributeError("Attribute name is not set")
         return self._name
 
-    def __set_name__(self, owner: Type['Signature'], name: str) -> None:
+    def __set_name__(self, owner: type["Signature"], name: str) -> None:
         if self._name is None:
             self._name = name
 
     @overload
-    def __get__(self: S, instance: None, owner: Type['Signature']) -> S:
+    def __get__(self, instance: None, owner: type["Signature"]) -> Self:
         pass
 
     @overload  # noqa: F811  # Ignore redefinition for overload
-    def __get__(self, instance: 'Signature', owner: Type['Signature']) -> T:
+    def __get__(self, instance: "Signature", owner: type["Signature"]) -> T:
         pass
 
     def __get__(  # noqa: F811  # Ignore redefinition for overload
-        self: S,
-        instance: Optional['Signature'],
-        owner: Type['Signature']
-    ) -> Union[S, T]:
+        self, instance: Optional["Signature"], owner: type["Signature"]
+    ) -> Self | T:
         if instance is None:
             return self
 
@@ -58,8 +47,8 @@ class SignatureDescriptor(Generic[T]):
 
         return instance.__dict__[self.name]
 
-    def __set__(self, instance: 'Signature', owner: Type['Signature']) -> None:
-        raise AttributeError('Symbols are read-only')
+    def __set__(self, instance: "Signature", owner: type["Signature"]) -> None:
+        raise AttributeError("Symbols are read-only")
 
 
 class ConstantDescriptor(SignatureDescriptor[Constant]):
@@ -77,7 +66,7 @@ class FunctionDescriptor(SignatureDescriptor[Function]):
 
 
 class VariableDescriptor(SignatureDescriptor[Variable]):
-    def _create_value(self, instance: 'Signature') -> Variable:
+    def _create_value(self, instance: "Signature") -> Variable:
         pool = instance._signature_variable_pool
         return pool[self.name]
 
@@ -115,7 +104,7 @@ def arity(arity) -> FunctionDescriptor:
         t = foo.f(foo.x, foo.y)  # OK
     """
     if arity <= 0:
-        raise ValueError('Arity must be non-negative.')
+        raise ValueError("Arity must be non-negative.")
     return FunctionDescriptor(arity=arity)
 
 

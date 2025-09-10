@@ -18,3 +18,6 @@ dev = [
     "ruff>=0.12.12",
     "ty>=0.0.1a20",
 ]
+
+[tool.ruff.lint]
+extend-select = ["UP"]
