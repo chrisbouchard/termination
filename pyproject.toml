@@ -15,9 +15,14 @@ build-backend = "uv_build"
 
 [dependency-groups]
 dev = [
+    "pytest>=8.4.2",
     "ruff>=0.12.12",
     "ty>=0.0.1a20",
 ]
+
+[tool.pytest.ini_options]
+addopts = ["--import-mode=importlib"]
+testpaths = ["tests"]
 
 [tool.ruff.lint]
 extend-select = ["UP", "RUF"]
