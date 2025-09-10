@@ -1,56 +1,26 @@
 """Module for syntactic terms and their support."""
 
-__all__ = [
-    'Constant',
-    'IndexedVariable',
-    'Function',
-    'Substitution',
-    'Term',
-    'Variable',
-    'variables'
-]
+from __future__ import annotations
 
-
-from abc import abstractmethod
+from collections.abc import Iterable, Iterator, Mapping
 from dataclasses import dataclass, field
-from typing import Generic, Iterable, Iterator, Mapping, Tuple, TypeVar
-
-from typing_extensions import Protocol, runtime
+from typing import Never, Protocol, runtime_checkable, Self
 
 
-Position = Tuple[int, ...]
-PositionIterable = Iterable[int]
+type Position = tuple[int, ...]
+type PositionIterable = Iterable[int]
 
-VariableMapping = Mapping['Variable', 'TermLike']
-
-T = TypeVar('T')
-TSub = TypeVar('TSub', covariant=True)
+type VariableMapping = Mapping[Variable, TermLike]
 
 
-@runtime
-class SupportsSubstitute(Generic[TSub], Protocol):
-    @abstractmethod
-    def _substitute(self, mapping: VariableMapping) -> TSub:
-        pass
-
-
-@runtime
-class SupportsVariables(Protocol):
-    @abstractmethod
-    def _variables(self) -> Iterator['Variable']:
-        pass
-
-
-class TermLike(SupportsSubstitute['TermLike'], SupportsVariables, Protocol):
+class TermLike(Protocol):
     """Abstract base class for things that can act as subterms.
 
     In addition to the listed abstract methods, implementations should respond
     to the free variables() function.
     """
 
-    @abstractmethod
-    def __getitem__(self, position: PositionIterable) -> 'TermLike':
-        pass
+    def __getitem__(self, position: PositionIterable) -> TermLike: ...
 
     def __contains__(self, position: PositionIterable) -> bool:
         try:
@@ -60,16 +30,12 @@ class TermLike(SupportsSubstitute['TermLike'], SupportsVariables, Protocol):
 
         return True
 
-    @abstractmethod
-    def __len__(self) -> int:
-        pass
+    def __len__(self) -> int: ...
 
-    @abstractmethod
-    def subterms(self) -> Iterator[Tuple[Position, 'TermLike']]:
-        pass
+    def subterms(self) -> Iterator[tuple[Position, TermLike]]: ...
 
     def positions(self) -> Iterator[Position]:
-        yield from (position for (position, term) in self.subterms())
+        yield from (position for (position, _term) in self.subterms())
 
 
 @dataclass(frozen=True)
@@ -82,7 +48,7 @@ class Symbol:
 class TerminalSymbol(Symbol, TermLike):
     """Base class for symbols that occur as terms."""
 
-    def __getitem__(self: T, position: PositionIterable) -> T:
+    def __getitem__(self, position: PositionIterable) -> Self:
         position_copy = tuple(position)
         position_iter = iter(position_copy)
 
@@ -91,12 +57,12 @@ class TerminalSymbol(Symbol, TermLike):
         except StopIteration:
             return self
 
-        raise KeyError(f'Invalid position: {position_copy}')
+        raise KeyError(f"Invalid position: {position_copy}")
 
     def __len__(self) -> int:
         return 1
 
-    def subterms(self: T) -> Iterator[Tuple[Position, T]]:
+    def subterms(self) -> Iterator[tuple[Position, Self]]:
         yield ((), self)
 
 
@@ -114,9 +80,7 @@ class Function(Symbol):
     def __post_init__(self) -> None:
         """Verify that the fields are valid."""
         if self.arity <= 0:
-            raise ValueError(
-                'Arity must be 1 or greater. For arity 0, use Constant.'
-            )
+            raise ValueError("Arity must be 1 or greater. For arity 0, use Constant.")
 
     def __str__(self) -> str:
         """Format the function symbol with its name and arity.
@@ -126,14 +90,14 @@ class Function(Symbol):
             f = Function(name='f', arity=2)
             str(f)  # 'f.2'
         """
-        return f'{self.name}.{self.arity}'
+        return f"{self.name}.{self.arity}"
 
-    def __call__(self, *args: TermLike) -> 'Term':
+    def __call__(self, *args: TermLike) -> Term:
         """Create a new term with this symbol as the root."""
         return Term(self, args)
 
 
-class Constant(TerminalSymbol, SupportsSubstitute['Constant']):
+class Constant(TerminalSymbol):
     """A constant symbol.
 
     Constant symbols are term-like symbols with no children. Constants have a
@@ -150,12 +114,11 @@ class Constant(TerminalSymbol, SupportsSubstitute['Constant']):
         """
         return self.name
 
-    def _substitute(self, mapping: VariableMapping) -> 'Constant':
+    def _substitute(self, mapping: VariableMapping) -> Constant:
         return self
 
-    def _variables(self) -> Iterator['Variable']:
-        # Form some reason, yield from () doesn't typecheck in Mypy.
-        yield from []
+    def _variables(self) -> Iterator[Never]:
+        yield from ()
 
 
 class Variable(TerminalSymbol):
@@ -174,9 +137,9 @@ class Variable(TerminalSymbol):
             x = Variable(name='x')
             str(x)  # '?x'
         """
-        return f'?{self.name}'
+        return f"?{self.name}"
 
-    def _variables(self: T) -> Iterator[T]:
+    def _variables(self) -> Iterator[Self]:
         yield self
 
     def _substitute(self, mapping: VariableMapping) -> TermLike:
@@ -206,30 +169,11 @@ class IndexedVariable(Variable):
             x = IndexedVariable(name='x', index=2)
             str(x)  # '?x#2'
         """
-        return f'?{self.name}#{self.index}'
-
-
-def variables(value: SupportsVariables) -> Iterator[Variable]:
-    """Return an iterator of the variables in this object.
-
-    The same variable may be yielded in any order and may appear multiple
-    times. If uniqueness is desired, store the results in a set::
-
-        vars = set(variables(obj))
-
-    Different types will define what "in" means in their context.
-
-    * ``Variable``: The variable itself
-    * ``Term``: All variables that occur as subterms.
-    """
-    try:
-        return value._variables()
-    except AttributeError:
-        raise TypeError(f'object of type {type(value).__name__} has no variables()')
+        return f"?{self.name}#{self.index}"
 
 
 @dataclass(frozen=True)
-class Term(TermLike, SupportsSubstitute['Term']):
+class Term(TermLike):
     """Application of a function symbol to children.
 
     The root of a term is a function symbol. The symbols arity must match the
@@ -238,7 +182,7 @@ class Term(TermLike, SupportsSubstitute['Term']):
     """
 
     root: Function
-    children: Tuple[TermLike, ...]
+    children: tuple[TermLike, ...]
 
     def __post_init__(self) -> None:
         """Verify that the root arity and number of children match."""
@@ -246,8 +190,7 @@ class Term(TermLike, SupportsSubstitute['Term']):
         length = len(self.children)
         if arity != length:
             raise ValueError(
-                'Incorrect number of child terms: '
-                f'Expected {arity}, found {length}'
+                f"Incorrect number of child terms: Expected {arity}, found {length}"
             )
 
     def __str__(self) -> str:
@@ -266,8 +209,8 @@ class Term(TermLike, SupportsSubstitute['Term']):
         # The default str() for Function includes the arity, which is redundant
         # here. Just use the symbol's name.
         root_str = self.root.name
-        children_str = ', '.join(str(child) for child in self.children)
-        return f'{root_str}({children_str})'
+        children_str = ", ".join(str(child) for child in self.children)
+        return f"{root_str}({children_str})"
 
     def __getitem__(self, position: PositionIterable) -> TermLike:
         """Get the subterm at the specified position in this term.
@@ -320,8 +263,8 @@ class Term(TermLike, SupportsSubstitute['Term']):
             # If either there's no child at the index, or if the recursive call
             # throws, we will report the error for the entire position. We
             # saved a copy for just this occasion.
-            except IndexError as ex:
-                raise KeyError(f'Invalid position: {position_copy}')
+            except IndexError:
+                raise KeyError(f"Invalid position: {position_copy}")
 
         return current_term
 
@@ -329,7 +272,7 @@ class Term(TermLike, SupportsSubstitute['Term']):
         """Return the number of positions in this term."""
         return 1 + sum(len(child) for child in self.children)
 
-    def subterms(self) -> Iterator[Tuple[Position, TermLike]]:
+    def subterms(self) -> Iterator[tuple[Position, TermLike]]:
         """Return an iterator over valid positions in this term and the subterm.
 
         The order in which subterms are yielded is not specified. Each position
@@ -354,18 +297,49 @@ class Term(TermLike, SupportsSubstitute['Term']):
         """
         yield ((), self)
         for index, child in enumerate(self.children):
-            for (position, term) in child.subterms():
+            for position, term in child.subterms():
                 yield ((index, *position), term)
 
-    def _substitute(self, mapping: VariableMapping) -> 'Term':
+    def _substitute(self, mapping: VariableMapping) -> Term:
         return Term(
             root=self.root,
-            children=tuple(child._substitute(mapping) for child in self.children)
+            children=tuple(child._substitute(mapping) for child in self.children),
         )
 
     def _variables(self) -> Iterator[Variable]:
         for child in self.children:
             yield from variables(child)
+
+
+@runtime_checkable
+class SupportsVariables(Protocol):
+    def _variables(self) -> Iterator[Variable]:
+        pass
+
+
+def variables(value: SupportsVariables) -> Iterator[Variable]:
+    """Return an iterator of the variables in this object.
+
+    The same variable may be yielded in any order and may appear multiple
+    times. If uniqueness is desired, store the results in a set::
+
+        vars = set(variables(obj))
+
+    Different types will define what "in" means in their context.
+
+    * ``Variable``: The variable itself
+    * ``Term``: All variables that occur as subterms.
+    """
+    try:
+        return value._variables()
+    except AttributeError:
+        raise TypeError(f"object of type {type(value).__name__} has no variables()")
+
+
+@runtime_checkable
+class SupportsSubstitute[R](Protocol):
+    def _substitute(self, mapping: VariableMapping) -> R:
+        pass
 
 
 @dataclass(frozen=True)
@@ -376,20 +350,18 @@ class Substitution:
 
     def __str__(self) -> str:
         """Format this substitution as its mapping."""
-        mapping_str = ', '.join(
-            f'{variable!s} -> {term!s}'
-            for (variable, term) in self.mapping.items()
+        mapping_str = ", ".join(
+            f"{variable!s} -> {term!s}" for (variable, term) in self.mapping.items()
         )
-        return f'{{{mapping_str}}}'
+        return f"{{{mapping_str}}}"
 
-    def __call__(self, value: SupportsSubstitute[T]) -> T:
+    def __call__[T](self, value: SupportsSubstitute[T]) -> T:
         """Apply this substitution to the given value."""
         try:
             return value._substitute(self.mapping)
         except AttributeError:
             raise TypeError(
-                f'object of type {type(value).__name__} does not support '
-                'substitution'
+                f"object of type {type(value).__name__} does not support substitution"
             )
 
     def __contains__(self, variable: Variable) -> bool:
@@ -404,7 +376,7 @@ class Substitution:
         """Return the number of variables explicitly mapped by this substitution."""
         return len(self.mapping)
 
-    def _substitute(self, mapping: VariableMapping) -> 'Substitution':
+    def _substitute(self, mapping: VariableMapping) -> Substitution:
         """Apply another substitution to this one.
 
         Applying one substitution to another is defined as composing the
@@ -436,7 +408,7 @@ class Substitution:
                 **{
                     variable: term._substitute(mapping)
                     for (variable, term) in self.mapping.items()
-                }
+                },
             }
         )
 

@@ -1,0 +1,28 @@
+[project]
+name = "termination"
+version = "0.1.0"
+description = "A library for first-order term-rewriting"
+readme = "README.md"
+authors = [
+    { name = "Chris Bouchard", email = "chris@upliftinglemma.net" }
+]
+requires-python = ">=3.13"
+dependencies = []
+
+[build-system]
+requires = ["uv_build>=0.8.14,<0.9.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.4.2",
+    "ruff>=0.12.12",
+    "ty>=0.0.1a20",
+]
+
+[tool.pytest.ini_options]
+addopts = ["--import-mode=importlib"]
+testpaths = ["tests"]
+
+[tool.ruff.lint]
+extend-select = ["UP", "RUF"]

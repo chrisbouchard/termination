@@ -6,15 +6,11 @@ returned from that pool previously. This can be necessary as variables with the
 same name and index are considered equal.
 """
 
-__all__ = [
-    'VariablePool',
-    'fresh_variable'
-]
-
+from __future__ import annotations
 
 from dataclasses import dataclass, field
 from functools import singledispatch
-from typing import Any, Dict, Optional
+from typing import Any, overload
 
 from .terms import IndexedVariable, Variable
 
@@ -38,7 +34,7 @@ class VariablePool:
     have never been returned from this pool previously.
     """
 
-    state: Dict[str, VariableState] = field(default_factory=dict)
+    state: dict[str, VariableState] = field(default_factory=dict)
 
     def __getitem__(self, name: str) -> Variable:
         """Return the the variable with the given name.
@@ -48,7 +44,12 @@ class VariablePool:
         """
         return self.get(name)
 
-    def get(self, name: str, index: Optional[int] = None) -> Variable:
+    @overload
+    def get(self, name: str) -> Variable: ...
+    @overload
+    def get(self, name: str, index: int) -> IndexedVariable: ...
+
+    def get(self, name: str, index: int | None = None) -> Variable:
         """Return a variable with the given name and index.
 
         If called with index != None, this method always returns a new variable
@@ -62,7 +63,7 @@ class VariablePool:
         self._get_state(name).update_index(index)
         return IndexedPoolVariable(name=name, index=index, pool=self)
 
-    def get_fresh(self, name: str) -> Variable:
+    def get_fresh(self, name: str) -> IndexedVariable:
         """Return a variable with the given name and a unique index.
 
         This method always returns a new variable instance, and its index is
@@ -100,7 +101,7 @@ def fresh_variable(source: Any) -> Variable:
     * For variables: The name is the name of the variable passed.
     * For variable pools: The name is an empty string ('').
     """
-    raise ValueError('Value is not associated with a variable pool')
+    raise ValueError("Value is not associated with a variable pool")
 
 
 @fresh_variable.register
@@ -115,4 +116,4 @@ def _fresh_variable_indexed_variable(variable: IndexedPoolVariable) -> Variable:
 
 @fresh_variable.register
 def _fresh_variable_pool(pool: VariablePool) -> Variable:
-    return pool.get_fresh('')
+    return pool.get_fresh("")
