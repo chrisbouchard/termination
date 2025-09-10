@@ -26,10 +26,6 @@ common style in term rewriting.
 
 from __future__ import annotations
 
-__all__ = [
-    "ordering",
-]
-
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from functools import wraps

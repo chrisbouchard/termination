@@ -2,13 +2,6 @@
 
 from __future__ import annotations
 
-__all__ = [
-    "Signature",
-    "arity",
-    "constant",
-    "variable",
-]
-
 from abc import ABC, abstractmethod
 from typing import Self, overload
 

@@ -8,11 +8,6 @@ same name and index are considered equal.
 
 from __future__ import annotations
 
-__all__ = [
-    "VariablePool",
-    "fresh_variable",
-]
-
 from dataclasses import dataclass, field
 from functools import singledispatch
 from typing import Any, overload

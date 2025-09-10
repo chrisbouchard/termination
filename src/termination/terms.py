@@ -2,16 +2,6 @@
 
 from __future__ import annotations
 
-__all__ = [
-    "Constant",
-    "Function",
-    "IndexedVariable",
-    "Substitution",
-    "Term",
-    "Variable",
-    "variables",
-]
-
 from collections.abc import Iterable, Iterator, Mapping
 from dataclasses import dataclass, field
 from typing import Never, Protocol, runtime_checkable, Self
